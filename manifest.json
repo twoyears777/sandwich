@@ -1,6 +1,6 @@
 {
-  "name": "Sandwich-Theke",
-  "short_name": "Sandwiches",
+  "name": "Youmember-Sandwich",
+  "short_name": "Youmember",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

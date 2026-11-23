@@ -6,11 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Sandwiches">
+<meta name="apple-mobile-web-app-title" content="Youmember">
 <meta name="theme-color" content="#1f2937">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
-<title>Sandwich-Theke</title>
+<title>Youmember-Sandwich</title>
 <style>
   :root{
     --bg:#f3f1ec; --card:#fff; --ink:#1f2937; --muted:#6b7280; --line:#e5e1d8;
@@ -26,7 +26,10 @@
   input,textarea{font:inherit;-webkit-user-select:text;user-select:text}
 
   header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--ink);color:#fff}
-  header h1{font-size:20px;margin:0;flex:1;font-weight:700}
+  .brand,header h1,.col h2,.sheet h3,.timer{font-family:"DIN Alternate","DIN Condensed","Bahnschrift","D-DIN","Barlow","Roboto Condensed","Arial Narrow",sans-serif}
+  header h1{font-size:26px;margin:0;font-weight:700;letter-spacing:.01em;text-transform:none}
+  header .ver{flex:1;text-align:left;font-size:13px;color:#fff;opacity:.55;padding:6px 4px;align-self:flex-end}
+  .col h2{font-size:17px;letter-spacing:.08em}
   header .stat{font-size:14px;opacity:.8;margin-right:8px}
   .btn{padding:12px 18px;border-radius:12px;font-weight:600;background:#e5e7eb}
   .btn.primary{background:var(--accent);color:var(--accent-ink)}
@@ -61,9 +64,13 @@
   .ing{color:#374151;font-size:15px;margin:6px 0 8px;line-height:1.35}
   .note{font-style:italic;color:var(--muted)}
   .age{font-size:13px;color:var(--muted)}
-  .paid{font-size:13px;font-weight:700;border-radius:999px;padding:5px 10px;white-space:nowrap}
-  .paid.yes{background:#dcfce7;color:#166534}
-  .paid.no{background:#fee2e2;color:#991b1b}
+  .paid{font-size:15px;font-weight:700;border-radius:10px;padding:8px 12px;white-space:nowrap;margin-left:auto}
+  .paid.yes{background:#dcfce7;color:#166534;border:1.5px solid #86efac}
+  .paid.no{background:var(--warn);color:#fff;box-shadow:0 2px 0 #991b1b}
+  .paid.no:active{transform:translateY(1px);box-shadow:none}
+  .changelog h4{margin:16px 0 4px;font-size:17px}
+  .changelog h4 span{font-weight:400;color:var(--muted);font-size:14px;margin-left:6px}
+  .changelog ul{margin:0;padding-left:20px;line-height:1.5}
   .actions{display:flex;flex-wrap:wrap;gap:6px}
   .platebtn{min-width:46px}
   .empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:15px}
@@ -102,7 +109,8 @@
 </head>
 <body>
 <header>
-  <h1>🥪 Sandwich-Theke</h1>
+  <h1>Youmember-Sandwich</h1>
+  <button class="ver" id="btnVer"></button>
   <span class="stat" id="hdrStat"></span>
   <button class="btn icon" id="btnDone">Abgeholt</button>
   <button class="btn icon" id="btnSettings">⚙︎</button>
@@ -171,11 +179,33 @@
   <div class="foot"><button class="btn" data-close>Schließen</button></div>
 </div></div>
 
+<!-- Versionsverlauf -->
+<div class="modal" id="mVer"><div class="sheet">
+  <h3>Versionsverlauf</h3>
+  <div class="changelog" id="changelog"></div>
+  <div class="foot"><button class="btn" data-close>Schließen</button></div>
+</div></div>
+
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">Rückgängig</button></div>
 
 <script>
 (() => {
 const KEY = 'sandwich-theke-v1';
+const VERSION = '1.1';
+const CHANGELOG = [
+  {v:'1.1', d:'23.11.2026', items:[
+    'Neuer Name: „Youmember-Sandwich“, Titel und Überschriften in kantiger, serifenloser Schrift',
+    'Bezahlen direkt vom Dashboard: deutlicher roter Knopf „€ Jetzt bezahlt“ bei jeder Bestellung – in der Warteschlange, im Sandwichmaker und bei „Fertig“',
+    'Zurücknehmen einer Bezahlung nur mit Rückfrage (gegen versehentliches Antippen)',
+    'Versionsverlauf (Tipp auf die Versionsnummer oben)',
+    'Updates kommen automatisch aufs iPad, sobald die App einmal mit Internet geöffnet wird'
+  ]},
+  {v:'1.0', d:'23.11.2026', items:[
+    'Erste Version: Bestellungen aufnehmen mit Zutaten-Auswahl, Warteschlange, 4 Platten mit Timer, Fertig/Abgeholt',
+    'Läuft offline, Daten bleiben auf dem iPad gespeichert',
+    'Einstellungen für Zutaten, Platten, Warnzeit und Preis, kleine Statistik'
+  ]}
+];
 const DEFAULTS = {
   settings:{
     ingredients:'Brot: Toast, Vollkorntoast\nBelag: Schinken, Salami, Hähnchen, Thunfisch\nKäse: Gouda, Cheddar, Mozzarella\nGemüse: Tomate, Gurke, Zwiebel, Mais, Paprika\nSoße: Ketchup, Mayo, BBQ, Kräuterbutter',
@@ -211,7 +241,7 @@ function snapshot(msg){
 $('toastUndo').onclick = () => { if(undoSnap){ S=JSON.parse(undoSnap); save(); render(); } $('toast').classList.remove('show'); undoSnap=null; };
 
 // ---------- Render ----------
-function paidBadge(o){ return `<button class="paid ${o.paid?'yes':'no'}" data-act="paid" data-id="${o.id}">${o.paid?'✓ bezahlt':'✗ offen'}</button>`; }
+function paidBadge(o){ return `<button class="paid ${o.paid?'yes':'no'}" data-act="paid" data-id="${o.id}">${o.paid?'✓ Bezahlt':'€ Jetzt bezahlt'}</button>`; }
 function ingText(o){
   const t = o.ingredients.length ? esc(o.ingredients.join(', ')) : '<span class="note">ohne Zutaten</span>';
   return t + (o.note?` · <span class="note">${esc(o.note)}</span>`:'');
@@ -278,7 +308,7 @@ document.addEventListener('click', e=>{
   const b=e.target.closest('[data-act]'); if(!b) return;
   const o=byId(b.dataset.id); if(!o) return;
   const act=b.dataset.act;
-  if(act==='paid'){ o.paid=!o.paid; }
+  if(act==='paid'){ if(o.paid && !confirm(`Bezahlung von ${o.name} wirklich zurücknehmen?`)) return; o.paid=!o.paid; }
   else if(act==='plate'){ snapshot(`#${o.nr} auf Platte ${b.dataset.plate}`); o.status='grill'; o.plate=+b.dataset.plate; o.startedAt=Date.now(); }
   else if(act==='ready'){ snapshot(`#${o.nr} fertig`); o.status='ready'; o.readyAt=Date.now(); o.grillTime=Date.now()-o.startedAt; o.plate=null; }
   else if(act==='back'){ snapshot(`#${o.nr} zurück in Warteschlange`); o.status='wait'; o.plate=null; o.startedAt=null; }
@@ -363,6 +393,11 @@ function renderDone(){
 }
 $('btnDone').onclick=()=>{ renderDone(); $('mDone').classList.add('open'); };
 
+$('btnVer').textContent='v'+VERSION;
+$('btnVer').onclick=()=>{
+  $('changelog').innerHTML=CHANGELOG.map(c=>`<h4>Version ${c.v}<span>${c.d}</span></h4><ul>${c.items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`).join('');
+  $('mVer').classList.add('open');
+};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.remove('open'));
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
 
