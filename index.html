@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sandwiches">
+<meta name="theme-color" content="#1f2937">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Sandwich-Theke</title>
+<style>
+  :root{
+    --bg:#f3f1ec; --card:#fff; --ink:#1f2937; --muted:#6b7280; --line:#e5e1d8;
+    --accent:#d97706; --accent-ink:#fff; --ok:#16a34a; --warn:#dc2626; --wait:#2563eb;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:17px}
+  body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-user-select:none;user-select:none;overscroll-behavior:none}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+  input,textarea{font:inherit;-webkit-user-select:text;user-select:text}
+
+  header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--ink);color:#fff}
+  header h1{font-size:20px;margin:0;flex:1;font-weight:700}
+  header .stat{font-size:14px;opacity:.8;margin-right:8px}
+  .btn{padding:12px 18px;border-radius:12px;font-weight:600;background:#e5e7eb}
+  .btn.primary{background:var(--accent);color:var(--accent-ink)}
+  .btn.ok{background:var(--ok);color:#fff}
+  .btn.ghost{background:transparent;border:1.5px solid var(--line)}
+  .btn.small{padding:8px 12px;font-size:15px;border-radius:10px}
+  .btn.icon{background:rgba(255,255,255,.12);color:#fff;padding:10px 14px}
+  .btn:disabled{opacity:.35}
+
+  main{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:14px;padding:14px;height:calc(100vh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+  @media (orientation:portrait){ main{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;height:auto;min-height:calc(100vh - 64px)}
+    #colPlates{grid-column:1 / span 2} }
+  .col{display:flex;flex-direction:column;min-height:0}
+  .col h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:2px 4px 10px;display:flex;justify-content:space-between}
+  .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding-bottom:90px}
+
+  .plates{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .plate{background:var(--card);border-radius:var(--radius);border:2px dashed var(--line);padding:12px;min-height:150px;display:flex;flex-direction:column;gap:8px}
+  .plate.busy{border:2px solid var(--wait)}
+  .plate.hot{border-color:var(--warn);background:#fef2f2}
+  .plate .ph{display:flex;justify-content:space-between;align-items:center;font-weight:700}
+  .plate .free{color:var(--muted);font-size:15px;margin:auto;text-align:center}
+  .slot{background:#f8fafc;border-radius:10px;padding:8px 10px}
+  .slot .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px}
+  .hot .timer{color:var(--warn)}
+
+  .card{background:var(--card);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 0 var(--line)}
+  .card .row{display:flex;align-items:center;gap:8px}
+  .nr{font-size:13px;font-weight:700;background:var(--ink);color:#fff;border-radius:7px;padding:2px 7px}
+  .name{font-weight:700;font-size:18px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ing{color:#374151;font-size:15px;margin:6px 0 8px;line-height:1.35}
+  .note{font-style:italic;color:var(--muted)}
+  .age{font-size:13px;color:var(--muted)}
+  .paid{font-size:13px;font-weight:700;border-radius:999px;padding:5px 10px;white-space:nowrap}
+  .paid.yes{background:#dcfce7;color:#166534}
+  .paid.no{background:#fee2e2;color:#991b1b}
+  .actions{display:flex;flex-wrap:wrap;gap:6px}
+  .platebtn{min-width:46px}
+  .empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:15px}
+
+  .fab{position:fixed;right:calc(20px + env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom));
+    background:var(--accent);color:#fff;font-size:20px;font-weight:700;padding:18px 26px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:5}
+
+  .modal{position:fixed;inset:0;background:rgba(17,24,39,.55);display:none;align-items:flex-start;justify-content:center;z-index:10;padding:30px 16px;overflow-y:auto}
+  .modal.open{display:flex}
+  .sheet{background:var(--card);border-radius:18px;width:100%;max-width:760px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .sheet h3{margin:0 0 14px;font-size:22px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px;font-weight:600}
+  .field input[type=text],.field input[type=number],.field textarea{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff}
+  .field textarea{min-height:150px}
+  .group{margin-bottom:10px}
+  .group .gname{font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{padding:11px 16px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-weight:600}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .toggle{display:flex;gap:8px}
+  .toggle .chip.on.yes{background:var(--ok);border-color:var(--ok)}
+  .toggle .chip.on.no{background:var(--warn);border-color:var(--warn)}
+  .sheet .foot{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+  .sheet .foot .spacer{flex:1}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+  .stats div{background:#f8fafc;border-radius:12px;padding:10px 12px}
+  .stats b{display:block;font-size:24px}
+  .stats span{font-size:13px;color:var(--muted)}
+  .hint{font-size:13px;color:var(--muted);margin-top:4px}
+  .done-list .card{opacity:.7}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;display:none;z-index:20;gap:14px;align-items:center}
+  .toast.show{display:flex}
+  .toast button{color:#fbbf24;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1>🥪 Sandwich-Theke</h1>
+  <span class="stat" id="hdrStat"></span>
+  <button class="btn icon" id="btnDone">Abgeholt</button>
+  <button class="btn icon" id="btnSettings">⚙︎</button>
+</header>
+
+<main>
+  <section class="col" id="colPlates">
+    <h2><span>Im Sandwichmaker</span><span id="plateInfo"></span></h2>
+    <div class="plates" id="plates"></div>
+  </section>
+  <section class="col">
+    <h2><span>Warteschlange</span><span id="cntWait"></span></h2>
+    <div class="scroll" id="waitList"></div>
+  </section>
+  <section class="col">
+    <h2><span>Fertig – zum Abholen</span><span id="cntReady"></span></h2>
+    <div class="scroll" id="readyList"></div>
+  </section>
+</main>
+
+<button class="fab" id="fab">＋ Neue Bestellung</button>
+
+<!-- Bestellung -->
+<div class="modal" id="mOrder"><div class="sheet">
+  <h3 id="oTitle">Neue Bestellung</h3>
+  <div class="field"><label>Name</label><input type="text" id="oName" autocomplete="off" autocapitalize="words" placeholder="z. B. Lena"></div>
+  <div class="field"><label>Was soll drauf?</label><div id="oIngr"></div></div>
+  <div class="field"><label>Sonderwunsch (optional)</label><input type="text" id="oNote" autocomplete="off" placeholder="z. B. extra knusprig"></div>
+  <div class="field"><label>Anzahl gleiche Sandwiches</label>
+    <div class="toggle" id="oQty"></div></div>
+  <div class="field"><label>Bezahlt?</label>
+    <div class="toggle"><button class="chip no" data-paid="0">Noch nicht</button><button class="chip yes" data-paid="1">Bezahlt</button></div>
+    <div class="hint" id="oPrice"></div></div>
+  <div class="foot">
+    <button class="btn ghost" id="oDelete" style="display:none;color:var(--warn)">Löschen</button>
+    <span class="spacer"></span>
+    <button class="btn" data-close>Abbrechen</button>
+    <button class="btn primary" id="oSave">Speichern</button>
+  </div>
+</div></div>
+
+<!-- Einstellungen -->
+<div class="modal" id="mSettings"><div class="sheet">
+  <h3>Einstellungen &amp; Statistik</h3>
+  <div class="stats" id="stats"></div>
+  <div class="field"><label>Zutaten (eine Zeile pro Gruppe: „Gruppe: Zutat, Zutat, …“)</label>
+    <textarea id="sIngr"></textarea></div>
+  <div class="field" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+    <div><label>Platten</label><input type="number" id="sPlates" min="1" max="12"></div>
+    <div><label>Sandwiches pro Platte</label><input type="number" id="sPer" min="1" max="6"></div>
+    <div><label>Warnen nach (Min.)</label><input type="number" id="sWarn" min="1" max="30" step="0.5"></div>
+    <div><label>Preis pro Stück (€, 0 = aus)</label><input type="number" id="sPrice" min="0" step="0.1"></div>
+  </div>
+  <div class="foot">
+    <button class="btn ghost" id="sReset" style="color:var(--warn)">Abend beenden (alles löschen)</button>
+    <span class="spacer"></span>
+    <button class="btn" data-close>Schließen</button>
+    <button class="btn primary" id="sSave">Speichern</button>
+  </div>
+</div></div>
+
+<!-- Abgeholt -->
+<div class="modal" id="mDone"><div class="sheet">
+  <h3>Abgeholt</h3>
+  <div class="done-list" id="doneList"></div>
+  <div class="foot"><button class="btn" data-close>Schließen</button></div>
+</div></div>
+
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">Rückgängig</button></div>
+
+<script>
+(() => {
+const KEY = 'sandwich-theke-v1';
+const DEFAULTS = {
+  settings:{
+    ingredients:'Brot: Toast, Vollkorntoast\nBelag: Schinken, Salami, Hähnchen, Thunfisch\nKäse: Gouda, Cheddar, Mozzarella\nGemüse: Tomate, Gurke, Zwiebel, Mais, Paprika\nSoße: Ketchup, Mayo, BBQ, Kräuterbutter',
+    plates:4, perPlate:1, warnMin:4, price:0
+  },
+  orders:[], nextNr:1
+};
+let S;
+try{ S = JSON.parse(localStorage.getItem(KEY)) || null; }catch(e){ S = null; }
+if(!S) S = JSON.parse(JSON.stringify(DEFAULTS));
+S.settings = Object.assign({}, DEFAULTS.settings, S.settings||{});
+const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ alert('Speichern fehlgeschlagen: '+e.message); } };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = ms => { const s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+const ago = ts => { const m=Math.floor((Date.now()-ts)/60000); return m<1?'gerade eben':'vor '+m+' Min.'; };
+const euro = n => n.toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+const groups = () => S.settings.ingredients.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+  const i=l.indexOf(':'); const name=i>=0?l.slice(0,i).trim():''; const items=(i>=0?l.slice(i+1):l).split(',').map(x=>x.trim()).filter(Boolean);
+  return {name,items};
+});
+const byId = id => S.orders.find(o=>o.id===id);
+const onPlate = p => S.orders.filter(o=>o.status==='grill'&&o.plate===p).sort((a,b)=>a.startedAt-b.startedAt);
+
+// ---------- Undo ----------
+let undoSnap=null, toastT=null;
+function snapshot(msg){
+  undoSnap = JSON.stringify(S);
+  $('toastMsg').textContent = msg; $('toast').classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>{$('toast').classList.remove('show');undoSnap=null;},5000);
+}
+$('toastUndo').onclick = () => { if(undoSnap){ S=JSON.parse(undoSnap); save(); render(); } $('toast').classList.remove('show'); undoSnap=null; };
+
+// ---------- Render ----------
+function paidBadge(o){ return `<button class="paid ${o.paid?'yes':'no'}" data-act="paid" data-id="${o.id}">${o.paid?'✓ bezahlt':'✗ offen'}</button>`; }
+function ingText(o){
+  const t = o.ingredients.length ? esc(o.ingredients.join(', ')) : '<span class="note">ohne Zutaten</span>';
+  return t + (o.note?` · <span class="note">${esc(o.note)}</span>`:'');
+}
+function render(){
+  const st=S.settings, warn=st.warnMin*60000, now=Date.now();
+  // Platten
+  let ph='';
+  for(let p=1;p<=st.plates;p++){
+    const items=onPlate(p); const hot=items.some(o=>now-o.startedAt>=warn);
+    ph+=`<div class="plate ${items.length?'busy':''} ${hot?'hot':''}"><div class="ph"><span>Platte ${p}</span><span class="age">${items.length}/${st.perPlate}</span></div>`;
+    if(!items.length) ph+=`<div class="free">frei</div>`;
+    items.forEach(o=>{
+      ph+=`<div class="slot"><div class="top"><span class="nr">#${o.nr}</span><span class="name">${esc(o.name)}</span><span class="timer" data-start="${o.startedAt}">${fmt(now-o.startedAt)}</span></div>
+        <div class="ing">${ingText(o)}</div>
+        <div class="actions"><button class="btn ok small" data-act="ready" data-id="${o.id}">Fertig ✓</button>
+        <button class="btn small" data-act="back" data-id="${o.id}">Zurück</button>${paidBadge(o)}</div></div>`;
+    });
+    ph+=`</div>`;
+  }
+  $('plates').innerHTML=ph;
+  const freeSlots = p => st.perPlate - onPlate(p).length;
+  const totalFree = Array.from({length:st.plates},(_,i)=>freeSlots(i+1)).reduce((a,b)=>a+b,0);
+  $('plateInfo').textContent = totalFree+' frei';
+
+  // Warteschlange
+  const wait=S.orders.filter(o=>o.status==='wait').sort((a,b)=>a.createdAt-b.createdAt);
+  $('cntWait').textContent=wait.length;
+  $('waitList').innerHTML = wait.length ? wait.map(o=>{
+    let pb=''; for(let p=1;p<=st.plates;p++) pb+=`<button class="btn small platebtn" data-act="plate" data-plate="${p}" data-id="${o.id}" ${freeSlots(p)>0?'':'disabled'}>P${p}</button>`;
+    return `<div class="card"><div class="row"><span class="nr">#${o.nr}</span><span class="name">${esc(o.name)}</span>${paidBadge(o)}</div>
+      <div class="ing">${ingText(o)}</div>
+      <div class="row" style="justify-content:space-between"><div class="actions">${pb}</div>
+      <button class="btn ghost small" data-act="edit" data-id="${o.id}">✎</button></div>
+      <div class="age" style="margin-top:6px">bestellt ${ago(o.createdAt)}</div></div>`;
+  }).join('') : '<div class="empty">Keine offenen Bestellungen.<br>Tippe auf „＋ Neue Bestellung“.</div>';
+
+  // Fertig
+  const ready=S.orders.filter(o=>o.status==='ready').sort((a,b)=>a.readyAt-b.readyAt);
+  $('cntReady').textContent=ready.length;
+  $('readyList').innerHTML = ready.length ? ready.map(o=>`<div class="card"><div class="row"><span class="nr">#${o.nr}</span><span class="name">${esc(o.name)}</span>${paidBadge(o)}</div>
+      <div class="ing">${ingText(o)}</div>
+      <div class="row" style="justify-content:space-between"><button class="btn ok small" data-act="done" data-id="${o.id}" ${o.paid?'':'title="Noch nicht bezahlt"'}>Abgeholt</button>
+      <span class="age">fertig ${ago(o.readyAt)}</span></div></div>`).join('') : '<div class="empty">Noch nichts fertig.</div>';
+
+  // Header
+  const done=S.orders.filter(o=>o.status==='done').length;
+  const open=S.orders.filter(o=>!o.paid).length;
+  $('hdrStat').textContent = `${S.orders.length} gesamt · ${done} abgeholt` + (open?` · ${open} unbezahlt`:'');
+}
+function tick(){
+  const warn=S.settings.warnMin*60000, now=Date.now();
+  document.querySelectorAll('.timer[data-start]').forEach(el=>{ el.textContent=fmt(now-(+el.dataset.start)); });
+  // hot-Status neu bewerten
+  let needs=false;
+  document.querySelectorAll('.plate').forEach((el,i)=>{ const hot=onPlate(i+1).some(o=>now-o.startedAt>=warn); if(hot!==el.classList.contains('hot')) needs=true; });
+  if(needs) render();
+}
+setInterval(tick,1000);
+setInterval(render,30000);
+
+// ---------- Aktionen ----------
+document.addEventListener('click', e=>{
+  const b=e.target.closest('[data-act]'); if(!b) return;
+  const o=byId(b.dataset.id); if(!o) return;
+  const act=b.dataset.act;
+  if(act==='paid'){ o.paid=!o.paid; }
+  else if(act==='plate'){ snapshot(`#${o.nr} auf Platte ${b.dataset.plate}`); o.status='grill'; o.plate=+b.dataset.plate; o.startedAt=Date.now(); }
+  else if(act==='ready'){ snapshot(`#${o.nr} fertig`); o.status='ready'; o.readyAt=Date.now(); o.grillTime=Date.now()-o.startedAt; o.plate=null; }
+  else if(act==='back'){ snapshot(`#${o.nr} zurück in Warteschlange`); o.status='wait'; o.plate=null; o.startedAt=null; }
+  else if(act==='done'){
+    if(!o.paid && !confirm(`${o.name} hat noch nicht bezahlt. Trotzdem als abgeholt markieren?`)) return;
+    snapshot(`#${o.nr} abgeholt`); o.status='done'; o.doneAt=Date.now();
+  }
+  else if(act==='edit'){ openOrder(o); return; }
+  else if(act==='reopen'){ o.status='ready'; renderDone(); }
+  save(); render();
+});
+
+// ---------- Bestellmaske ----------
+let editing=null, sel=new Set(), paid=false, qty=1;
+function drawOrderForm(){
+  $('oIngr').innerHTML = groups().map(g=>`<div class="group">${g.name?`<div class="gname">${esc(g.name)}</div>`:''}<div class="chips">${
+    g.items.map(it=>`<button class="chip ${sel.has(it)?'on':''}" data-ing="${esc(it)}">${esc(it)}</button>`).join('')}</div></div>`).join('');
+  document.querySelectorAll('[data-paid]').forEach(c=>c.classList.toggle('on', (c.dataset.paid==='1')===paid));
+  $('oQty').innerHTML = [1,2,3,4].map(n=>`<button class="chip ${qty===n?'on':''}" data-qty="${n}" ${editing?'disabled':''}>${n}×</button>`).join('');
+  $('oPrice').textContent = S.settings.price>0 ? `Zu zahlen: ${euro(S.settings.price*(editing?1:qty))}` : '';
+}
+function openOrder(o){
+  editing=o||null; sel=new Set(o?o.ingredients:[]); paid=o?o.paid:false; qty=1;
+  $('oTitle').textContent = o?`Bestellung #${o.nr} bearbeiten`:'Neue Bestellung';
+  $('oName').value=o?o.name:''; $('oNote').value=o?(o.note||''):'';
+  $('oDelete').style.display=o?'':'none';
+  drawOrderForm(); $('mOrder').classList.add('open');
+  if(!o) setTimeout(()=>$('oName').focus(),50);
+}
+$('oIngr').addEventListener('click',e=>{ const c=e.target.closest('[data-ing]'); if(!c) return; const v=c.dataset.ing; sel.has(v)?sel.delete(v):sel.add(v); c.classList.toggle('on'); });
+document.querySelectorAll('[data-paid]').forEach(c=>c.onclick=()=>{ paid=c.dataset.paid==='1'; drawOrderForm(); });
+$('oQty').addEventListener('click',e=>{ const c=e.target.closest('[data-qty]'); if(!c||c.disabled) return; qty=+c.dataset.qty; drawOrderForm(); });
+$('oSave').onclick=()=>{
+  const name=$('oName').value.trim(); if(!name){ $('oName').focus(); $('oName').style.borderColor='var(--warn)'; return; }
+  $('oName').style.borderColor='';
+  // Reihenfolge der Zutaten wie in der Liste
+  const order=groups().flatMap(g=>g.items); const ingredients=order.filter(x=>sel.has(x));
+  const note=$('oNote').value.trim();
+  if(editing){ Object.assign(editing,{name,ingredients,note,paid}); }
+  else { for(let i=0;i<qty;i++){ S.orders.push({id:Math.random().toString(36).slice(2)+Date.now(),nr:S.nextNr++,name:qty>1?`${name} (${i+1}/${qty})`:name,ingredients,note,paid,status:'wait',plate:null,createdAt:Date.now()}); } }
+  save(); render(); $('mOrder').classList.remove('open');
+};
+$('oDelete').onclick=()=>{ if(!editing) return; snapshot(`#${editing.nr} gelöscht`); S.orders=S.orders.filter(o=>o!==editing); save(); render(); $('mOrder').classList.remove('open'); };
+$('fab').onclick=()=>openOrder(null);
+
+// ---------- Einstellungen ----------
+function renderStats(){
+  const all=S.orders, done=all.filter(o=>o.status==='done');
+  const times=all.filter(o=>o.grillTime).map(o=>o.grillTime);
+  const avg=times.length?times.reduce((a,b)=>a+b,0)/times.length:0;
+  const cnt={}; all.forEach(o=>o.ingredients.forEach(i=>cnt[i]=(cnt[i]||0)+1));
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k} (${v})`).join(', ')||'–';
+  const paidN=all.filter(o=>o.paid).length;
+  let h=`<div><b>${all.length}</b><span>Sandwiches bestellt</span></div><div><b>${done.length}</b><span>abgeholt</span></div>
+    <div><b>${paidN}</b><span>bezahlt</span></div><div><b>${times.length?fmt(avg):'–'}</b><span>Ø Zeit im Maker</span></div>`;
+  if(S.settings.price>0) h+=`<div><b>${euro(paidN*S.settings.price)}</b><span>Einnahmen (bezahlt)</span></div>`;
+  h+=`<div style="grid-column:1/-1"><span>Beliebteste Zutaten</span><div style="font-weight:600">${esc(top)}</div></div>`;
+  $('stats').innerHTML=h;
+}
+$('btnSettings').onclick=()=>{
+  const s=S.settings; $('sIngr').value=s.ingredients; $('sPlates').value=s.plates; $('sPer').value=s.perPlate; $('sWarn').value=s.warnMin; $('sPrice').value=s.price;
+  renderStats(); $('mSettings').classList.add('open');
+};
+$('sSave').onclick=()=>{
+  const s=S.settings; const clamp=(v,a,b,d)=>{v=parseFloat(String(v).replace(',','.'));return isNaN(v)?d:Math.min(b,Math.max(a,v));};
+  s.ingredients=$('sIngr').value; s.plates=Math.round(clamp($('sPlates').value,1,12,4)); s.perPlate=Math.round(clamp($('sPer').value,1,6,1));
+  s.warnMin=clamp($('sWarn').value,0.5,30,4); s.price=clamp($('sPrice').value,0,100,0);
+  // Sandwiches auf nicht mehr vorhandenen Platten zurück in die Warteschlange
+  S.orders.forEach(o=>{ if(o.status==='grill'&&o.plate>s.plates){o.status='wait';o.plate=null;} });
+  save(); render(); $('mSettings').classList.remove('open');
+};
+$('sReset').onclick=()=>{
+  if(!confirm('Alle Bestellungen löschen und Nummern auf 1 zurücksetzen? (Zutaten & Einstellungen bleiben)')) return;
+  S.orders=[]; S.nextNr=1; save(); render(); renderStats();
+};
+
+// ---------- Abgeholt ----------
+function renderDone(){
+  const d=S.orders.filter(o=>o.status==='done').sort((a,b)=>b.doneAt-a.doneAt);
+  $('doneList').innerHTML = d.length ? d.map(o=>`<div class="card"><div class="row"><span class="nr">#${o.nr}</span><span class="name">${esc(o.name)}</span>${paidBadge(o)}
+    <button class="btn small" data-act="reopen" data-id="${o.id}">Zurückholen</button></div><div class="ing">${ingText(o)}</div></div>`).join('') : '<div class="empty">Noch nichts abgeholt.</div>';
+}
+$('btnDone').onclick=()=>{ renderDone(); $('mDone').classList.add('open'); };
+
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.remove('open'));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
+
+render();
+
+// Offline-Unterstützung
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+})();
+</script>
+</body>
+</html>
