@@ -1,4 +1,22 @@
 <!DOCTYPE html>
+<!--
+  ============================================================
+  YOUMEMBER-SANDWICH
+  Bestell-App für den Sandwichverkauf im Jugendkreis.
+  Läuft komplett offline auf dem iPad, alle Daten bleiben auf dem Gerät.
+
+  Aufbau dieser Datei:
+    1. Kopf (Name, Icon, Offline-Einstellungen)
+    2. Aussehen (CSS) – Farben ganz oben bei ":root"
+    3. Bildschirm-Aufbau (HTML) – Kopfzeile, 3 Spalten, Fenster
+    4. Programm (JavaScript) – in nummerierte Abschnitte gegliedert
+
+  Kleine Änderungen selbst machen:
+    - Farben:            Abschnitt 2, ":root"
+    - Standard-Zutaten:  Abschnitt 4.1, "STANDARD_EINSTELLUNGEN"
+    - Versionsverlauf:   Abschnitt 4.1, "CHANGELOG" (neue Version oben eintragen)
+  ============================================================
+-->
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -8,15 +26,22 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Youmember">
 <meta name="theme-color" content="#1f2937">
+<!-- Erkennungszeichen: daran prüft der Offline-Speicher (sw.js), dass wirklich diese App geladen wurde
+     und keine fremde Seite (z. B. eine WLAN-Anmeldeseite). Nicht entfernen! -->
+<meta name="app-kennung" content="youmember-sandwich-app">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Youmember-Sandwich</title>
+
+<!-- ======================= 2. AUSSEHEN ======================= -->
 <style>
+  /* Farben der App */
   :root{
     --bg:#f3f1ec; --card:#fff; --ink:#1f2937; --muted:#6b7280; --line:#e5e1d8;
     --accent:#d97706; --accent-ink:#fff; --ok:#16a34a; --warn:#dc2626; --wait:#2563eb;
     --radius:14px;
   }
+  /* Grundschrift (iPad-Systemschrift) */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:17px}
@@ -25,27 +50,34 @@
   button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
   input,textarea{font:inherit;-webkit-user-select:text;user-select:text}
 
+  /* Kantige Überschrift-Schrift (DIN ist auf dem iPad eingebaut) */
+  header h1,.col h2,.sheet h3,.timer{font-family:"DIN Alternate","DIN Condensed","Bahnschrift","D-DIN","Barlow","Roboto Condensed","Arial Narrow",sans-serif}
+
+  /* Kopfzeile */
   header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--ink);color:#fff}
-  .brand,header h1,.col h2,.sheet h3,.timer{font-family:"DIN Alternate","DIN Condensed","Bahnschrift","D-DIN","Barlow","Roboto Condensed","Arial Narrow",sans-serif}
-  header h1{font-size:26px;margin:0;font-weight:700;letter-spacing:.01em;text-transform:none}
+  header h1{font-size:26px;margin:0;font-weight:700;letter-spacing:.01em}
   header .ver{flex:1;text-align:left;font-size:13px;color:#fff;opacity:.55;padding:6px 4px;align-self:flex-end}
-  .col h2{font-size:17px;letter-spacing:.08em}
   header .stat{font-size:14px;opacity:.8;margin-right:8px}
+
+  /* Knöpfe */
   .btn{padding:12px 18px;border-radius:12px;font-weight:600;background:#e5e7eb}
   .btn.primary{background:var(--accent);color:var(--accent-ink)}
   .btn.ok{background:var(--ok);color:#fff}
+  .btn.danger{background:var(--warn);color:#fff}
   .btn.ghost{background:transparent;border:1.5px solid var(--line)}
   .btn.small{padding:8px 12px;font-size:15px;border-radius:10px}
   .btn.icon{background:rgba(255,255,255,.12);color:#fff;padding:10px 14px}
   .btn:disabled{opacity:.35}
 
+  /* Drei Spalten: Platten | Warteschlange | Fertig */
   main{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:14px;padding:14px;height:calc(100vh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
   @media (orientation:portrait){ main{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;height:auto;min-height:calc(100vh - 64px)}
     #colPlates{grid-column:1 / span 2} }
   .col{display:flex;flex-direction:column;min-height:0}
-  .col h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:2px 4px 10px;display:flex;justify-content:space-between}
+  .col h2{font-size:17px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:2px 4px 10px;display:flex;justify-content:space-between}
   .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding-bottom:90px}
 
+  /* Platten im Sandwichmaker */
   .plates{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .plate{background:var(--card);border-radius:var(--radius);border:2px dashed var(--line);padding:12px;min-height:150px;display:flex;flex-direction:column;gap:8px}
   .plate.busy{border:2px solid var(--wait)}
@@ -57,6 +89,7 @@
   .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px}
   .hot .timer{color:var(--warn)}
 
+  /* Bestell-Karten */
   .card{background:var(--card);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 0 var(--line)}
   .card .row{display:flex;align-items:center;gap:8px}
   .nr{font-size:13px;font-weight:700;background:var(--ink);color:#fff;border-radius:7px;padding:2px 7px}
@@ -64,24 +97,26 @@
   .ing{color:#374151;font-size:15px;margin:6px 0 8px;line-height:1.35}
   .note{font-style:italic;color:var(--muted)}
   .age{font-size:13px;color:var(--muted)}
+  .actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .platebtn{min-width:46px}
+  .empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:15px}
+
+  /* Bezahlt-Knopf */
   .paid{font-size:15px;font-weight:700;border-radius:10px;padding:8px 12px;white-space:nowrap;margin-left:auto}
   .paid.yes{background:#dcfce7;color:#166534;border:1.5px solid #86efac}
   .paid.no{background:var(--warn);color:#fff;box-shadow:0 2px 0 #991b1b}
   .paid.no:active{transform:translateY(1px);box-shadow:none}
-  .changelog h4{margin:16px 0 4px;font-size:17px}
-  .changelog h4 span{font-weight:400;color:var(--muted);font-size:14px;margin-left:6px}
-  .changelog ul{margin:0;padding-left:20px;line-height:1.5}
-  .actions{display:flex;flex-wrap:wrap;gap:6px}
-  .platebtn{min-width:46px}
-  .empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:15px}
 
+  /* Großer "Neue Bestellung"-Knopf */
   .fab{position:fixed;right:calc(20px + env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom));
     background:var(--accent);color:#fff;font-size:20px;font-weight:700;padding:18px 26px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:5}
 
+  /* Fenster (Bestellung, Einstellungen, …) */
   .modal{position:fixed;inset:0;background:rgba(17,24,39,.55);display:none;align-items:flex-start;justify-content:center;z-index:10;padding:30px 16px;overflow-y:auto}
   .modal.open{display:flex}
+  #mOrder{z-index:12} /* Bestellfenster liegt immer oben, auch über "Abgeholt" */
   .sheet{background:var(--card);border-radius:18px;width:100%;max-width:760px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
-  .sheet h3{margin:0 0 14px;font-size:22px}
+  .sheet h3{margin:0 0 14px;font-size:24px}
   .field{margin-bottom:14px}
   .field label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px;font-weight:600}
   .field input[type=text],.field input[type=number],.field textarea{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff}
@@ -91,29 +126,43 @@
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{padding:11px 16px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-weight:600}
   .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip.old{border-style:dashed}
   .toggle{display:flex;gap:8px}
   .toggle .chip.on.yes{background:var(--ok);border-color:var(--ok)}
   .toggle .chip.on.no{background:var(--warn);border-color:var(--warn)}
   .sheet .foot{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
   .sheet .foot .spacer{flex:1}
+  .hint{font-size:13px;color:var(--muted);margin-top:4px}
+
+  /* Statistik & Abend-Zusammenfassung */
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
   .stats div{background:#f8fafc;border-radius:12px;padding:10px 12px}
   .stats b{display:block;font-size:24px}
   .stats span{font-size:13px;color:var(--muted)}
-  .hint{font-size:13px;color:var(--muted);margin-top:4px}
-  .done-list .card{opacity:.7}
+  .warnbox{background:#fef2f2;border:1.5px solid #fecaca;color:#991b1b;border-radius:12px;padding:10px 14px;margin-bottom:14px}
+  .history{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+  .done-list .card{opacity:.8}
+
+  /* Versionsverlauf */
+  .changelog h4{margin:16px 0 4px;font-size:17px}
+  .changelog h4 span{font-weight:400;color:var(--muted);font-size:14px;margin-left:6px}
+  .changelog ul{margin:0;padding-left:20px;line-height:1.5}
+
+  /* Kurze Meldung unten mit "Rückgängig" */
   .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;display:none;z-index:20;gap:14px;align-items:center}
   .toast.show{display:flex}
   .toast button{color:#fbbf24;font-weight:700}
 </style>
 </head>
+
+<!-- ======================= 3. BILDSCHIRM-AUFBAU ======================= -->
 <body>
 <header>
   <h1>Youmember-Sandwich</h1>
   <button class="ver" id="btnVer"></button>
   <span class="stat" id="hdrStat"></span>
   <button class="btn icon" id="btnDone">Abgeholt</button>
-  <button class="btn icon" id="btnSettings">⚙︎</button>
+  <button class="btn icon" id="btnSettings" aria-label="Einstellungen">⚙︎</button>
 </header>
 
 <main>
@@ -133,14 +182,13 @@
 
 <button class="fab" id="fab">＋ Neue Bestellung</button>
 
-<!-- Bestellung -->
+<!-- Fenster: Bestellung aufnehmen / bearbeiten -->
 <div class="modal" id="mOrder"><div class="sheet">
   <h3 id="oTitle">Neue Bestellung</h3>
-  <div class="field"><label>Name</label><input type="text" id="oName" autocomplete="off" autocapitalize="words" placeholder="z. B. Lena"></div>
+  <div class="field"><label>Name</label><input type="text" id="oName" autocomplete="off" autocapitalize="words" maxlength="40" placeholder="z. B. Lena"></div>
   <div class="field"><label>Was soll drauf?</label><div id="oIngr"></div></div>
-  <div class="field"><label>Sonderwunsch (optional)</label><input type="text" id="oNote" autocomplete="off" placeholder="z. B. extra knusprig"></div>
-  <div class="field"><label>Anzahl gleiche Sandwiches</label>
-    <div class="toggle" id="oQty"></div></div>
+  <div class="field"><label>Sonderwunsch (optional)</label><input type="text" id="oNote" autocomplete="off" maxlength="80" placeholder="z. B. extra knusprig"></div>
+  <div class="field" id="oQtyField"><label>Anzahl gleiche Sandwiches</label><div class="toggle" id="oQty"></div></div>
   <div class="field"><label>Bezahlt?</label>
     <div class="toggle"><button class="chip no" data-paid="0">Noch nicht</button><button class="chip yes" data-paid="1">Bezahlt</button></div>
     <div class="hint" id="oPrice"></div></div>
@@ -152,10 +200,11 @@
   </div>
 </div></div>
 
-<!-- Einstellungen -->
+<!-- Fenster: Einstellungen & Statistik -->
 <div class="modal" id="mSettings"><div class="sheet">
   <h3>Einstellungen &amp; Statistik</h3>
   <div class="stats" id="stats"></div>
+  <div class="history" id="history"></div>
   <div class="field"><label>Zutaten (eine Zeile pro Gruppe: „Gruppe: Zutat, Zutat, …“)</label>
     <textarea id="sIngr"></textarea></div>
   <div class="field" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
@@ -165,21 +214,34 @@
     <div><label>Preis pro Stück (€, 0 = aus)</label><input type="number" id="sPrice" min="0" step="0.1"></div>
   </div>
   <div class="foot">
-    <button class="btn ghost" id="sReset" style="color:var(--warn)">Abend beenden (alles löschen)</button>
+    <button class="btn ghost" id="sEnd" style="color:var(--warn)">Abend beenden …</button>
     <span class="spacer"></span>
     <button class="btn" data-close>Schließen</button>
     <button class="btn primary" id="sSave">Speichern</button>
   </div>
 </div></div>
 
-<!-- Abgeholt -->
+<!-- Fenster: Abend beenden (Zusammenfassung) -->
+<div class="modal" id="mEnd"><div class="sheet">
+  <h3>Abend beenden</h3>
+  <div id="endSummary"></div>
+  <div class="hint" style="margin-bottom:14px">Beim Beenden werden alle Bestellungen gelöscht und die Nummern starten wieder bei 1. Zutaten und Einstellungen bleiben. Die Zahlen des Abends werden unter „Vergangene Abende“ aufgehoben.</div>
+  <div class="foot">
+    <button class="btn ghost" id="endShare">Zusammenfassung teilen</button>
+    <span class="spacer"></span>
+    <button class="btn" data-close>Abbrechen</button>
+    <button class="btn danger" id="endConfirm">Abend beenden</button>
+  </div>
+</div></div>
+
+<!-- Fenster: Abgeholte Bestellungen -->
 <div class="modal" id="mDone"><div class="sheet">
   <h3>Abgeholt</h3>
   <div class="done-list" id="doneList"></div>
   <div class="foot"><button class="btn" data-close>Schließen</button></div>
 </div></div>
 
-<!-- Versionsverlauf -->
+<!-- Fenster: Versionsverlauf -->
 <div class="modal" id="mVer"><div class="sheet">
   <h3>Versionsverlauf</h3>
   <div class="changelog" id="changelog"></div>
@@ -188,224 +250,537 @@
 
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">Rückgängig</button></div>
 
+<!-- ======================= 4. PROGRAMM ======================= -->
 <script>
 (() => {
-const KEY = 'sandwich-theke-v1';
-const VERSION = '1.1';
+'use strict';
+
+/* ---------- 4.1 Grundeinstellungen & Versionsverlauf ---------- */
+
+const VERSION = '1.2';
+const DATEN_VERSION = 2;                 // erhöhen, wenn sich das Speicherformat ändert (siehe 4.2 "aufbereiten")
+const SPEICHER_NAME = 'sandwich-theke-v1'; // NICHT ändern – sonst sind die gespeicherten Daten "weg"
+const MAX_ABENDE = 30;                   // so viele vergangene Abende werden aufgehoben
+
+const STANDARD_EINSTELLUNGEN = {
+  ingredients: 'Brot: Toast, Vollkorntoast\nBelag: Schinken, Salami, Hähnchen, Thunfisch\nKäse: Gouda, Cheddar, Mozzarella\nGemüse: Tomate, Gurke, Zwiebel, Mais, Paprika\nSoße: Ketchup, Mayo, BBQ, Kräuterbutter',
+  plates: 4,      // Anzahl Platten
+  perPlate: 1,    // Sandwiches pro Platte
+  warnMin: 4,     // nach so vielen Minuten wird die Platte rot
+  price: 0        // Preis pro Sandwich in Euro (0 = ausgeblendet)
+};
+
 const CHANGELOG = [
+  {v:'1.2', d:'25.11.2026', items:[
+    'Stabilitätsupdate',
+    'Offline-Speicher abgesichert: Eine WLAN-Anmeldeseite oder ein Fehler bei GitHub kann die App nicht mehr überschreiben',
+    '„Rückgängig“ betrifft nur noch die eine Bestellung – andere, die in der Zwischenzeit dazukamen, bleiben erhalten',
+    'Bestellungen lassen sich überall bearbeiten (✎): in der Warteschlange, im Sandwichmaker, bei „Fertig“ und bei „Abgeholt“',
+    'Zutaten, die es in der Liste nicht mehr gibt, gehen beim Bearbeiten nicht mehr verloren',
+    'Bezahlt-Knopf im Fenster „Abgeholt“ aktualisiert sich sofort',
+    '„Abend beenden“ zeigt vorher eine Zusammenfassung (inkl. offener Zahlungen), die man teilen kann; die Zahlen werden als „Vergangene Abende“ aufgehoben',
+    'Bildschirm bleibt an, solange die App offen ist (wenn das iPad es unterstützt)',
+    'Beschädigte Daten werden gesichert statt überschrieben; Speicherformat hat jetzt eine Versionsnummer für spätere Updates',
+    'Ein Sandwichmaker kann nicht mehr überfüllt werden, auch nicht durch „Rückgängig“',
+    'Code aufgeräumt und auf Deutsch kommentiert'
+  ]},
   {v:'1.1', d:'23.11.2026', items:[
     'Neuer Name: „Youmember-Sandwich“, Titel und Überschriften in kantiger, serifenloser Schrift',
-    'Bezahlen direkt vom Dashboard: deutlicher roter Knopf „€ Jetzt bezahlt“ bei jeder Bestellung – in der Warteschlange, im Sandwichmaker und bei „Fertig“',
-    'Zurücknehmen einer Bezahlung nur mit Rückfrage (gegen versehentliches Antippen)',
+    'Bezahlen direkt vom Dashboard: roter Knopf „€ Jetzt bezahlt“ bei jeder Bestellung',
+    'Zurücknehmen einer Bezahlung nur mit Rückfrage',
     'Versionsverlauf (Tipp auf die Versionsnummer oben)',
     'Updates kommen automatisch aufs iPad, sobald die App einmal mit Internet geöffnet wird'
   ]},
   {v:'1.0', d:'23.11.2026', items:[
-    'Erste Version: Bestellungen aufnehmen mit Zutaten-Auswahl, Warteschlange, 4 Platten mit Timer, Fertig/Abgeholt',
+    'Erste Version: Bestellungen mit Zutaten-Auswahl, Warteschlange, 4 Platten mit Timer, Fertig/Abgeholt',
     'Läuft offline, Daten bleiben auf dem iPad gespeichert',
     'Einstellungen für Zutaten, Platten, Warnzeit und Preis, kleine Statistik'
   ]}
 ];
-const DEFAULTS = {
-  settings:{
-    ingredients:'Brot: Toast, Vollkorntoast\nBelag: Schinken, Salami, Hähnchen, Thunfisch\nKäse: Gouda, Cheddar, Mozzarella\nGemüse: Tomate, Gurke, Zwiebel, Mais, Paprika\nSoße: Ketchup, Mayo, BBQ, Kräuterbutter',
-    plates:4, perPlate:1, warnMin:4, price:0
-  },
-  orders:[], nextNr:1
-};
-let S;
-try{ S = JSON.parse(localStorage.getItem(KEY)) || null; }catch(e){ S = null; }
-if(!S) S = JSON.parse(JSON.stringify(DEFAULTS));
-S.settings = Object.assign({}, DEFAULTS.settings, S.settings||{});
-const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ alert('Speichern fehlgeschlagen: '+e.message); } };
+
+
+/* ---------- 4.2 Daten laden & speichern ---------- */
+
+// Ein leerer Anfangszustand
+function neuerZustand(){
+  return { dataVersion: DATEN_VERSION, settings: {...STANDARD_EINSTELLUNGEN}, orders: [], nextNr: 1, evenings: [] };
+}
+
+// Bringt gespeicherte Daten (auch aus älteren Versionen) in das aktuelle Format
+function aufbereiten(d){
+  if(!d || typeof d !== 'object') throw new Error('keine gültigen Daten');
+  d.settings = Object.assign({}, STANDARD_EINSTELLUNGEN, d.settings || {});
+  if(!Array.isArray(d.orders)) d.orders = [];
+  d.orders = d.orders.filter(o => o && o.id);
+  d.orders.forEach(o => {
+    if(!Array.isArray(o.ingredients)) o.ingredients = [];
+    if(!['wait','grill','ready','done'].includes(o.status)) o.status = 'wait';
+    if(o.status === 'grill' && !o.startedAt) { o.status = 'wait'; o.plate = null; }
+  });
+  const hoechsteNr = d.orders.reduce((m, o) => Math.max(m, o.nr || 0), 0);
+  d.nextNr = Math.max(d.nextNr || 1, hoechsteNr + 1);
+  if(!Array.isArray(d.evenings)) d.evenings = [];
+  d.dataVersion = DATEN_VERSION;
+  return d;
+}
+
+function laden(){
+  let roh = null;
+  try { roh = localStorage.getItem(SPEICHER_NAME); } catch(e) {}
+  if(!roh) return neuerZustand();
+  try {
+    return aufbereiten(JSON.parse(roh));
+  } catch(e) {
+    // Daten sind kaputt: Kopie unter anderem Namen sichern, statt sie zu überschreiben
+    try { localStorage.setItem(SPEICHER_NAME + '-defekt-' + Date.now(), roh); } catch(_) {}
+    alert('Die gespeicherten Daten waren beschädigt. Eine Sicherungskopie wurde angelegt, die App startet leer.');
+    return neuerZustand();
+  }
+}
+
+let S = laden();   // S = der komplette Zustand der App (Einstellungen + Bestellungen)
+
+function speichernNachStart(){ speichern(); } // aufbereitete Daten gleich im neuen Format sichern
+
+function speichern(){
+  try { localStorage.setItem(SPEICHER_NAME, JSON.stringify(S)); }
+  catch(e) { alert('Speichern hat nicht geklappt: ' + e.message); }
+}
+
+
+/* ---------- 4.3 Kleine Hilfsfunktionen ---------- */
 
 const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt = ms => { const s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
-const ago = ts => { const m=Math.floor((Date.now()-ts)/60000); return m<1?'gerade eben':'vor '+m+' Min.'; };
-const euro = n => n.toLocaleString('de-DE',{style:'currency',currency:'EUR'});
-const groups = () => S.settings.ingredients.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
-  const i=l.indexOf(':'); const name=i>=0?l.slice(0,i).trim():''; const items=(i>=0?l.slice(i+1):l).split(',').map(x=>x.trim()).filter(Boolean);
-  return {name,items};
-});
-const byId = id => S.orders.find(o=>o.id===id);
-const onPlate = p => S.orders.filter(o=>o.status==='grill'&&o.plate===p).sort((a,b)=>a.startedAt-b.startedAt);
 
-// ---------- Undo ----------
-let undoSnap=null, toastT=null;
-function snapshot(msg){
-  undoSnap = JSON.stringify(S);
-  $('toastMsg').textContent = msg; $('toast').classList.add('show');
-  clearTimeout(toastT); toastT=setTimeout(()=>{$('toast').classList.remove('show');undoSnap=null;},5000);
-}
-$('toastUndo').onclick = () => { if(undoSnap){ S=JSON.parse(undoSnap); save(); render(); } $('toast').classList.remove('show'); undoSnap=null; };
+// Macht Text "ungefährlich", bevor er angezeigt wird (z. B. wenn jemand <b> als Namen eintippt)
+const sicher = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-// ---------- Render ----------
-function paidBadge(o){ return `<button class="paid ${o.paid?'yes':'no'}" data-act="paid" data-id="${o.id}">${o.paid?'✓ Bezahlt':'€ Jetzt bezahlt'}</button>`; }
-function ingText(o){
-  const t = o.ingredients.length ? esc(o.ingredients.join(', ')) : '<span class="note">ohne Zutaten</span>';
-  return t + (o.note?` · <span class="note">${esc(o.note)}</span>`:'');
+const minSek = ms => { const s = Math.max(0, Math.floor(ms/1000)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
+const vorWieLange = ts => { const m = Math.floor((Date.now()-ts)/60000); return m < 1 ? 'gerade eben' : 'vor ' + m + ' Min.'; };
+const euro = n => n.toLocaleString('de-DE', {style:'currency', currency:'EUR'});
+const kopie = x => JSON.parse(JSON.stringify(x));
+const neueId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+// Zutatenliste aus den Einstellungen lesen: [{name:'Belag', items:['Schinken', …]}, …]
+function zutatenGruppen(){
+  return S.settings.ingredients.split('\n').map(z => z.trim()).filter(Boolean).map(z => {
+    const i = z.indexOf(':');
+    const name = i >= 0 ? z.slice(0, i).trim() : '';
+    const items = (i >= 0 ? z.slice(i+1) : z).split(',').map(x => x.trim()).filter(Boolean);
+    return {name, items};
+  });
 }
-function render(){
-  const st=S.settings, warn=st.warnMin*60000, now=Date.now();
-  // Platten
-  let ph='';
-  for(let p=1;p<=st.plates;p++){
-    const items=onPlate(p); const hot=items.some(o=>now-o.startedAt>=warn);
-    ph+=`<div class="plate ${items.length?'busy':''} ${hot?'hot':''}"><div class="ph"><span>Platte ${p}</span><span class="age">${items.length}/${st.perPlate}</span></div>`;
-    if(!items.length) ph+=`<div class="free">frei</div>`;
-    items.forEach(o=>{
-      ph+=`<div class="slot"><div class="top"><span class="nr">#${o.nr}</span><span class="name">${esc(o.name)}</span><span class="timer" data-start="${o.startedAt}">${fmt(now-o.startedAt)}</span></div>
-        <div class="ing">${ingText(o)}</div>
-        <div class="actions"><button class="btn ok small" data-act="ready" data-id="${o.id}">Fertig ✓</button>
-        <button class="btn small" data-act="back" data-id="${o.id}">Zurück</button>${paidBadge(o)}</div></div>`;
-    });
-    ph+=`</div>`;
+
+const bestellung = id => S.orders.find(o => o.id === id);
+const aufPlatte = p => S.orders.filter(o => o.status === 'grill' && o.plate === p).sort((a,b) => a.startedAt - b.startedAt);
+const freiePlaetze = p => S.settings.perPlate - aufPlatte(p).length;
+const istOffen = id => $(id).classList.contains('open');
+
+
+/* ---------- 4.4 Rückgängig (immer nur für EINE Bestellung) ---------- */
+
+let rueckgaengig = null, meldungTimer = null;
+
+// Merkt sich den Zustand einer Bestellung VOR einer Änderung
+function merken(o, text){
+  rueckgaengig = { id: o.id, vorher: kopie(o), position: S.orders.indexOf(o) };
+  $('toastMsg').textContent = text;
+  $('toast').classList.add('show');
+  clearTimeout(meldungTimer);
+  meldungTimer = setTimeout(() => { $('toast').classList.remove('show'); rueckgaengig = null; }, 6000);
+}
+
+$('toastUndo').onclick = () => {
+  if(rueckgaengig){
+    const alt = rueckgaengig.vorher;
+    // Wenn die Platte inzwischen belegt ist, kommt das Sandwich zurück in die Warteschlange
+    if(alt.status === 'grill' && aufPlatte(alt.plate).filter(x => x.id !== alt.id).length >= S.settings.perPlate){
+      alt.status = 'wait'; alt.plate = null; alt.startedAt = null;
+    }
+    const i = S.orders.findIndex(o => o.id === alt.id);
+    if(i >= 0) S.orders[i] = alt;                                            // geändert → zurücksetzen
+    else S.orders.splice(Math.min(rueckgaengig.position, S.orders.length), 0, alt); // gelöscht → wieder einfügen
+    speichern(); allesNeuZeichnen();
   }
-  $('plates').innerHTML=ph;
-  const freeSlots = p => st.perPlate - onPlate(p).length;
-  const totalFree = Array.from({length:st.plates},(_,i)=>freeSlots(i+1)).reduce((a,b)=>a+b,0);
-  $('plateInfo').textContent = totalFree+' frei';
+  $('toast').classList.remove('show');
+  rueckgaengig = null;
+};
 
-  // Warteschlange
-  const wait=S.orders.filter(o=>o.status==='wait').sort((a,b)=>a.createdAt-b.createdAt);
-  $('cntWait').textContent=wait.length;
-  $('waitList').innerHTML = wait.length ? wait.map(o=>{
-    let pb=''; for(let p=1;p<=st.plates;p++) pb+=`<button class="btn small platebtn" data-act="plate" data-plate="${p}" data-id="${o.id}" ${freeSlots(p)>0?'':'disabled'}>P${p}</button>`;
-    return `<div class="card"><div class="row"><span class="nr">#${o.nr}</span><span class="name">${esc(o.name)}</span>${paidBadge(o)}</div>
-      <div class="ing">${ingText(o)}</div>
-      <div class="row" style="justify-content:space-between"><div class="actions">${pb}</div>
-      <button class="btn ghost small" data-act="edit" data-id="${o.id}">✎</button></div>
-      <div class="age" style="margin-top:6px">bestellt ${ago(o.createdAt)}</div></div>`;
+
+/* ---------- 4.5 Bildschirm zeichnen ---------- */
+
+function bezahltKnopf(o){
+  return `<button class="paid ${o.paid ? 'yes' : 'no'}" data-act="paid" data-id="${o.id}">${o.paid ? '✓ Bezahlt' : '€ Jetzt bezahlt'}</button>`;
+}
+function bearbeitenKnopf(o){
+  return `<button class="btn ghost small" data-act="edit" data-id="${o.id}" aria-label="Bearbeiten">✎</button>`;
+}
+function zutatenText(o){
+  const t = o.ingredients.length ? sicher(o.ingredients.join(', ')) : '<span class="note">ohne Zutaten</span>';
+  return t + (o.note ? ` · <span class="note">${sicher(o.note)}</span>` : '');
+}
+
+function zeichnen(){
+  const st = S.settings, warnMs = st.warnMin * 60000, jetzt = Date.now();
+
+  // Platten
+  let html = '';
+  for(let p = 1; p <= st.plates; p++){
+    const liste = aufPlatte(p);
+    const heiss = liste.some(o => jetzt - o.startedAt >= warnMs);
+    html += `<div class="plate ${liste.length ? 'busy' : ''} ${heiss ? 'hot' : ''}">
+      <div class="ph"><span>Platte ${p}</span><span class="age">${liste.length}/${st.perPlate}</span></div>`;
+    if(!liste.length) html += `<div class="free">frei</div>`;
+    liste.forEach(o => {
+      html += `<div class="slot">
+        <div class="top"><span class="nr">#${o.nr}</span><span class="name">${sicher(o.name)}</span><span class="timer" data-start="${o.startedAt}">${minSek(jetzt - o.startedAt)}</span></div>
+        <div class="ing">${zutatenText(o)}</div>
+        <div class="actions">
+          <button class="btn ok small" data-act="ready" data-id="${o.id}">Fertig ✓</button>
+          <button class="btn small" data-act="back" data-id="${o.id}">Zurück</button>
+          ${bearbeitenKnopf(o)}${bezahltKnopf(o)}
+        </div></div>`;
+    });
+    html += `</div>`;
+  }
+  $('plates').innerHTML = html;
+  let frei = 0; for(let p = 1; p <= st.plates; p++) frei += Math.max(0, freiePlaetze(p));
+  $('plateInfo').textContent = frei + ' frei';
+
+  // Warteschlange (älteste zuerst)
+  const warten = S.orders.filter(o => o.status === 'wait').sort((a,b) => a.createdAt - b.createdAt);
+  $('cntWait').textContent = warten.length;
+  $('waitList').innerHTML = warten.length ? warten.map(o => {
+    let knoepfe = '';
+    for(let p = 1; p <= st.plates; p++) knoepfe += `<button class="btn small platebtn" data-act="plate" data-plate="${p}" data-id="${o.id}" ${freiePlaetze(p) > 0 ? '' : 'disabled'}>P${p}</button>`;
+    return `<div class="card">
+      <div class="row"><span class="nr">#${o.nr}</span><span class="name">${sicher(o.name)}</span>${bezahltKnopf(o)}</div>
+      <div class="ing">${zutatenText(o)}</div>
+      <div class="row" style="justify-content:space-between"><div class="actions">${knoepfe}</div>${bearbeitenKnopf(o)}</div>
+      <div class="age" style="margin-top:6px">bestellt ${vorWieLange(o.createdAt)}</div></div>`;
   }).join('') : '<div class="empty">Keine offenen Bestellungen.<br>Tippe auf „＋ Neue Bestellung“.</div>';
 
-  // Fertig
-  const ready=S.orders.filter(o=>o.status==='ready').sort((a,b)=>a.readyAt-b.readyAt);
-  $('cntReady').textContent=ready.length;
-  $('readyList').innerHTML = ready.length ? ready.map(o=>`<div class="card"><div class="row"><span class="nr">#${o.nr}</span><span class="name">${esc(o.name)}</span>${paidBadge(o)}</div>
-      <div class="ing">${ingText(o)}</div>
-      <div class="row" style="justify-content:space-between"><button class="btn ok small" data-act="done" data-id="${o.id}" ${o.paid?'':'title="Noch nicht bezahlt"'}>Abgeholt</button>
-      <span class="age">fertig ${ago(o.readyAt)}</span></div></div>`).join('') : '<div class="empty">Noch nichts fertig.</div>';
+  // Fertig – zum Abholen
+  const fertig = S.orders.filter(o => o.status === 'ready').sort((a,b) => a.readyAt - b.readyAt);
+  $('cntReady').textContent = fertig.length;
+  $('readyList').innerHTML = fertig.length ? fertig.map(o => `<div class="card">
+      <div class="row"><span class="nr">#${o.nr}</span><span class="name">${sicher(o.name)}</span>${bezahltKnopf(o)}</div>
+      <div class="ing">${zutatenText(o)}</div>
+      <div class="row" style="justify-content:space-between">
+        <div class="actions"><button class="btn ok small" data-act="done" data-id="${o.id}">Abgeholt</button>${bearbeitenKnopf(o)}</div>
+        <span class="age">fertig ${vorWieLange(o.readyAt)}</span></div></div>`).join('')
+    : '<div class="empty">Noch nichts fertig.</div>';
 
-  // Header
-  const done=S.orders.filter(o=>o.status==='done').length;
-  const open=S.orders.filter(o=>!o.paid).length;
-  $('hdrStat').textContent = `${S.orders.length} gesamt · ${done} abgeholt` + (open?` · ${open} unbezahlt`:'');
+  // Kopfzeile
+  const abgeholt = S.orders.filter(o => o.status === 'done').length;
+  const unbezahlt = S.orders.filter(o => !o.paid).length;
+  $('hdrStat').textContent = `${S.orders.length} gesamt · ${abgeholt} abgeholt` + (unbezahlt ? ` · ${unbezahlt} unbezahlt` : '');
 }
-function tick(){
-  const warn=S.settings.warnMin*60000, now=Date.now();
-  document.querySelectorAll('.timer[data-start]').forEach(el=>{ el.textContent=fmt(now-(+el.dataset.start)); });
-  // hot-Status neu bewerten
-  let needs=false;
-  document.querySelectorAll('.plate').forEach((el,i)=>{ const hot=onPlate(i+1).some(o=>now-o.startedAt>=warn); if(hot!==el.classList.contains('hot')) needs=true; });
-  if(needs) render();
-}
-setInterval(tick,1000);
-setInterval(render,30000);
 
-// ---------- Aktionen ----------
-document.addEventListener('click', e=>{
-  const b=e.target.closest('[data-act]'); if(!b) return;
-  const o=byId(b.dataset.id); if(!o) return;
-  const act=b.dataset.act;
-  if(act==='paid'){ if(o.paid && !confirm(`Bezahlung von ${o.name} wirklich zurücknehmen?`)) return; o.paid=!o.paid; }
-  else if(act==='plate'){ snapshot(`#${o.nr} auf Platte ${b.dataset.plate}`); o.status='grill'; o.plate=+b.dataset.plate; o.startedAt=Date.now(); }
-  else if(act==='ready'){ snapshot(`#${o.nr} fertig`); o.status='ready'; o.readyAt=Date.now(); o.grillTime=Date.now()-o.startedAt; o.plate=null; }
-  else if(act==='back'){ snapshot(`#${o.nr} zurück in Warteschlange`); o.status='wait'; o.plate=null; o.startedAt=null; }
-  else if(act==='done'){
-    if(!o.paid && !confirm(`${o.name} hat noch nicht bezahlt. Trotzdem als abgeholt markieren?`)) return;
-    snapshot(`#${o.nr} abgeholt`); o.status='done'; o.doneAt=Date.now();
+function abgeholtZeichnen(){
+  const liste = S.orders.filter(o => o.status === 'done').sort((a,b) => b.doneAt - a.doneAt);
+  $('doneList').innerHTML = liste.length ? liste.map(o => `<div class="card">
+      <div class="row"><span class="nr">#${o.nr}</span><span class="name">${sicher(o.name)}</span>${bezahltKnopf(o)}</div>
+      <div class="ing">${zutatenText(o)}</div>
+      <div class="actions"><button class="btn small" data-act="reopen" data-id="${o.id}">Zurückholen</button>${bearbeitenKnopf(o)}</div></div>`).join('')
+    : '<div class="empty">Noch nichts abgeholt.</div>';
+}
+
+// Zeichnet alles neu, was gerade sichtbar ist (auch offene Fenster)
+function allesNeuZeichnen(){
+  zeichnen();
+  if(istOffen('mDone')) abgeholtZeichnen();
+}
+
+// Jede Sekunde: Timer weiterzählen; Platte rot färben, sobald die Warnzeit erreicht ist
+function sekundenTakt(){
+  const warnMs = S.settings.warnMin * 60000, jetzt = Date.now();
+  document.querySelectorAll('.timer[data-start]').forEach(el => { el.textContent = minSek(jetzt - (+el.dataset.start)); });
+  let neu = false;
+  document.querySelectorAll('.plate').forEach((el, i) => {
+    const heiss = aufPlatte(i+1).some(o => jetzt - o.startedAt >= warnMs);
+    if(heiss !== el.classList.contains('hot')) neu = true;
+  });
+  if(neu) zeichnen();
+}
+setInterval(sekundenTakt, 1000);
+setInterval(zeichnen, 30000); // "vor X Min." aktualisieren
+
+
+/* ---------- 4.6 Knöpfe auf den Bestell-Karten ---------- */
+
+document.addEventListener('click', e => {
+  const k = e.target.closest('[data-act]'); if(!k) return;
+  const o = bestellung(k.dataset.id); if(!o) return;
+
+  switch(k.dataset.act){
+    case 'paid':
+      if(o.paid && !confirm(`Bezahlung von ${o.name} wirklich zurücknehmen?`)) return;
+      o.paid = !o.paid;
+      break;
+    case 'plate': {
+      const p = +k.dataset.plate;
+      if(freiePlaetze(p) <= 0) return; // Platte voll (Sicherheitsprüfung)
+      merken(o, `#${o.nr} auf Platte ${p}`);
+      o.status = 'grill'; o.plate = p; o.startedAt = Date.now();
+      break; }
+    case 'ready':
+      merken(o, `#${o.nr} fertig`);
+      o.status = 'ready'; o.readyAt = Date.now(); o.grillTime = Date.now() - o.startedAt; o.plate = null;
+      break;
+    case 'back':
+      merken(o, `#${o.nr} zurück in Warteschlange`);
+      o.status = 'wait'; o.plate = null; o.startedAt = null;
+      break;
+    case 'done':
+      if(!o.paid && !confirm(`${o.name} hat noch nicht bezahlt. Trotzdem als abgeholt markieren?`)) return;
+      merken(o, `#${o.nr} abgeholt`);
+      o.status = 'done'; o.doneAt = Date.now();
+      break;
+    case 'reopen':
+      merken(o, `#${o.nr} zurückgeholt`);
+      o.status = 'ready'; o.readyAt = Date.now();
+      break;
+    case 'edit':
+      bestellFensterOeffnen(o);
+      return;
+    default: return;
   }
-  else if(act==='edit'){ openOrder(o); return; }
-  else if(act==='reopen'){ o.status='ready'; renderDone(); }
-  save(); render();
+  speichern(); allesNeuZeichnen();
 });
 
-// ---------- Bestellmaske ----------
-let editing=null, sel=new Set(), paid=false, qty=1;
-function drawOrderForm(){
-  $('oIngr').innerHTML = groups().map(g=>`<div class="group">${g.name?`<div class="gname">${esc(g.name)}</div>`:''}<div class="chips">${
-    g.items.map(it=>`<button class="chip ${sel.has(it)?'on':''}" data-ing="${esc(it)}">${esc(it)}</button>`).join('')}</div></div>`).join('');
-  document.querySelectorAll('[data-paid]').forEach(c=>c.classList.toggle('on', (c.dataset.paid==='1')===paid));
-  $('oQty').innerHTML = [1,2,3,4].map(n=>`<button class="chip ${qty===n?'on':''}" data-qty="${n}" ${editing?'disabled':''}>${n}×</button>`).join('');
-  $('oPrice').textContent = S.settings.price>0 ? `Zu zahlen: ${euro(S.settings.price*(editing?1:qty))}` : '';
-}
-function openOrder(o){
-  editing=o||null; sel=new Set(o?o.ingredients:[]); paid=o?o.paid:false; qty=1;
-  $('oTitle').textContent = o?`Bestellung #${o.nr} bearbeiten`:'Neue Bestellung';
-  $('oName').value=o?o.name:''; $('oNote').value=o?(o.note||''):'';
-  $('oDelete').style.display=o?'':'none';
-  drawOrderForm(); $('mOrder').classList.add('open');
-  if(!o) setTimeout(()=>$('oName').focus(),50);
-}
-$('oIngr').addEventListener('click',e=>{ const c=e.target.closest('[data-ing]'); if(!c) return; const v=c.dataset.ing; sel.has(v)?sel.delete(v):sel.add(v); c.classList.toggle('on'); });
-document.querySelectorAll('[data-paid]').forEach(c=>c.onclick=()=>{ paid=c.dataset.paid==='1'; drawOrderForm(); });
-$('oQty').addEventListener('click',e=>{ const c=e.target.closest('[data-qty]'); if(!c||c.disabled) return; qty=+c.dataset.qty; drawOrderForm(); });
-$('oSave').onclick=()=>{
-  const name=$('oName').value.trim(); if(!name){ $('oName').focus(); $('oName').style.borderColor='var(--warn)'; return; }
-  $('oName').style.borderColor='';
-  // Reihenfolge der Zutaten wie in der Liste
-  const order=groups().flatMap(g=>g.items); const ingredients=order.filter(x=>sel.has(x));
-  const note=$('oNote').value.trim();
-  if(editing){ Object.assign(editing,{name,ingredients,note,paid}); }
-  else { for(let i=0;i<qty;i++){ S.orders.push({id:Math.random().toString(36).slice(2)+Date.now(),nr:S.nextNr++,name:qty>1?`${name} (${i+1}/${qty})`:name,ingredients,note,paid,status:'wait',plate:null,createdAt:Date.now()}); } }
-  save(); render(); $('mOrder').classList.remove('open');
-};
-$('oDelete').onclick=()=>{ if(!editing) return; snapshot(`#${editing.nr} gelöscht`); S.orders=S.orders.filter(o=>o!==editing); save(); render(); $('mOrder').classList.remove('open'); };
-$('fab').onclick=()=>openOrder(null);
 
-// ---------- Einstellungen ----------
-function renderStats(){
-  const all=S.orders, done=all.filter(o=>o.status==='done');
-  const times=all.filter(o=>o.grillTime).map(o=>o.grillTime);
-  const avg=times.length?times.reduce((a,b)=>a+b,0)/times.length:0;
-  const cnt={}; all.forEach(o=>o.ingredients.forEach(i=>cnt[i]=(cnt[i]||0)+1));
-  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k} (${v})`).join(', ')||'–';
-  const paidN=all.filter(o=>o.paid).length;
-  let h=`<div><b>${all.length}</b><span>Sandwiches bestellt</span></div><div><b>${done.length}</b><span>abgeholt</span></div>
-    <div><b>${paidN}</b><span>bezahlt</span></div><div><b>${times.length?fmt(avg):'–'}</b><span>Ø Zeit im Maker</span></div>`;
-  if(S.settings.price>0) h+=`<div><b>${euro(paidN*S.settings.price)}</b><span>Einnahmen (bezahlt)</span></div>`;
-  h+=`<div style="grid-column:1/-1"><span>Beliebteste Zutaten</span><div style="font-weight:600">${esc(top)}</div></div>`;
-  $('stats').innerHTML=h;
+/* ---------- 4.7 Fenster "Neue Bestellung / Bearbeiten" ---------- */
+
+let inBearbeitung = null;   // die Bestellung, die gerade bearbeitet wird (null = neue Bestellung)
+let auswahl = new Set();    // angetippte Zutaten
+let alteZutaten = [];       // Zutaten der Bestellung, die es in der Liste nicht mehr gibt
+let bezahlt = false, anzahl = 1;
+
+function bestellFensterZeichnen(){
+  let html = zutatenGruppen().map(g => `<div class="group">${g.name ? `<div class="gname">${sicher(g.name)}</div>` : ''}<div class="chips">${
+    g.items.map(z => `<button class="chip ${auswahl.has(z) ? 'on' : ''}" data-ing="${sicher(z)}">${sicher(z)}</button>`).join('')}</div></div>`).join('');
+  if(alteZutaten.length){
+    html += `<div class="group"><div class="gname">Nicht mehr in der Liste</div><div class="chips">${
+      alteZutaten.map(z => `<button class="chip old ${auswahl.has(z) ? 'on' : ''}" data-ing="${sicher(z)}">${sicher(z)}</button>`).join('')}</div></div>`;
+  }
+  $('oIngr').innerHTML = html;
+  document.querySelectorAll('[data-paid]').forEach(c => c.classList.toggle('on', (c.dataset.paid === '1') === bezahlt));
+  $('oQtyField').style.display = inBearbeitung ? 'none' : '';
+  $('oQty').innerHTML = [1,2,3,4].map(n => `<button class="chip ${anzahl === n ? 'on' : ''}" data-qty="${n}">${n}×</button>`).join('');
+  $('oPrice').textContent = S.settings.price > 0 ? `Zu zahlen: ${euro(S.settings.price * (inBearbeitung ? 1 : anzahl))}` : '';
 }
-$('btnSettings').onclick=()=>{
-  const s=S.settings; $('sIngr').value=s.ingredients; $('sPlates').value=s.plates; $('sPer').value=s.perPlate; $('sWarn').value=s.warnMin; $('sPrice').value=s.price;
-  renderStats(); $('mSettings').classList.add('open');
-};
-$('sSave').onclick=()=>{
-  const s=S.settings; const clamp=(v,a,b,d)=>{v=parseFloat(String(v).replace(',','.'));return isNaN(v)?d:Math.min(b,Math.max(a,v));};
-  s.ingredients=$('sIngr').value; s.plates=Math.round(clamp($('sPlates').value,1,12,4)); s.perPlate=Math.round(clamp($('sPer').value,1,6,1));
-  s.warnMin=clamp($('sWarn').value,0.5,30,4); s.price=clamp($('sPrice').value,0,100,0);
-  // Sandwiches auf nicht mehr vorhandenen Platten zurück in die Warteschlange
-  S.orders.forEach(o=>{ if(o.status==='grill'&&o.plate>s.plates){o.status='wait';o.plate=null;} });
-  save(); render(); $('mSettings').classList.remove('open');
-};
-$('sReset').onclick=()=>{
-  if(!confirm('Alle Bestellungen löschen und Nummern auf 1 zurücksetzen? (Zutaten & Einstellungen bleiben)')) return;
-  S.orders=[]; S.nextNr=1; save(); render(); renderStats();
+
+function bestellFensterOeffnen(o){
+  inBearbeitung = o || null;
+  auswahl = new Set(o ? o.ingredients : []);
+  const bekannt = new Set(zutatenGruppen().flatMap(g => g.items));
+  alteZutaten = o ? o.ingredients.filter(z => !bekannt.has(z)) : [];
+  bezahlt = o ? !!o.paid : false;
+  anzahl = 1;
+  $('oTitle').textContent = o ? `Bestellung #${o.nr} bearbeiten` : 'Neue Bestellung';
+  $('oName').value = o ? o.name : '';
+  $('oName').style.borderColor = '';
+  $('oNote').value = o ? (o.note || '') : '';
+  $('oDelete').style.display = o ? '' : 'none';
+  bestellFensterZeichnen();
+  $('mOrder').classList.add('open');
+  if(!o) setTimeout(() => $('oName').focus(), 50);
+}
+
+$('oIngr').addEventListener('click', e => {
+  const c = e.target.closest('[data-ing]'); if(!c) return;
+  const z = c.dataset.ing;
+  auswahl.has(z) ? auswahl.delete(z) : auswahl.add(z);
+  c.classList.toggle('on');
+});
+document.querySelectorAll('[data-paid]').forEach(c => c.onclick = () => { bezahlt = c.dataset.paid === '1'; bestellFensterZeichnen(); });
+$('oQty').addEventListener('click', e => { const c = e.target.closest('[data-qty]'); if(!c) return; anzahl = +c.dataset.qty; bestellFensterZeichnen(); });
+
+$('oSave').onclick = () => {
+  const name = $('oName').value.trim();
+  if(!name){ $('oName').focus(); $('oName').style.borderColor = 'var(--warn)'; return; }
+  // Zutaten in der Reihenfolge der Liste, alte Zutaten hinten dran
+  const reihenfolge = [...zutatenGruppen().flatMap(g => g.items), ...alteZutaten];
+  const zutaten = [...new Set(reihenfolge)].filter(z => auswahl.has(z));
+  const notiz = $('oNote').value.trim();
+
+  if(inBearbeitung){
+    const o = bestellung(inBearbeitung.id);
+    if(o){ merken(o, `#${o.nr} geändert`); Object.assign(o, {name, ingredients: zutaten, note: notiz, paid: bezahlt}); }
+  } else {
+    for(let i = 0; i < anzahl; i++){
+      S.orders.push({
+        id: neueId(), nr: S.nextNr++,
+        name: anzahl > 1 ? `${name} (${i+1}/${anzahl})` : name,
+        ingredients: zutaten, note: notiz, paid: bezahlt,
+        status: 'wait', plate: null, createdAt: Date.now()
+      });
+    }
+  }
+  speichern(); allesNeuZeichnen();
+  $('mOrder').classList.remove('open');
 };
 
-// ---------- Abgeholt ----------
-function renderDone(){
-  const d=S.orders.filter(o=>o.status==='done').sort((a,b)=>b.doneAt-a.doneAt);
-  $('doneList').innerHTML = d.length ? d.map(o=>`<div class="card"><div class="row"><span class="nr">#${o.nr}</span><span class="name">${esc(o.name)}</span>${paidBadge(o)}
-    <button class="btn small" data-act="reopen" data-id="${o.id}">Zurückholen</button></div><div class="ing">${ingText(o)}</div></div>`).join('') : '<div class="empty">Noch nichts abgeholt.</div>';
-}
-$('btnDone').onclick=()=>{ renderDone(); $('mDone').classList.add('open'); };
+$('oDelete').onclick = () => {
+  if(!inBearbeitung) return;
+  const o = bestellung(inBearbeitung.id); if(!o) return;
+  merken(o, `#${o.nr} gelöscht`);
+  S.orders = S.orders.filter(x => x.id !== o.id);
+  speichern(); allesNeuZeichnen();
+  $('mOrder').classList.remove('open');
+};
 
-$('btnVer').textContent='v'+VERSION;
-$('btnVer').onclick=()=>{
-  $('changelog').innerHTML=CHANGELOG.map(c=>`<h4>Version ${c.v}<span>${c.d}</span></h4><ul>${c.items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`).join('');
+$('fab').onclick = () => bestellFensterOeffnen(null);
+
+
+/* ---------- 4.8 Statistik & Abend-Zusammenfassung ---------- */
+
+function abendZahlen(){
+  const alle = S.orders;
+  const zeiten = alle.filter(o => o.grillTime).map(o => o.grillTime);
+  const zaehler = {};
+  alle.forEach(o => o.ingredients.forEach(z => zaehler[z] = (zaehler[z] || 0) + 1));
+  const bezahltAnz = alle.filter(o => o.paid).length;
+  return {
+    datum: new Date().toLocaleDateString('de-DE'),
+    gesamt: alle.length,
+    abgeholt: alle.filter(o => o.status === 'done').length,
+    bezahlt: bezahltAnz,
+    einnahmen: S.settings.price > 0 ? bezahltAnz * S.settings.price : null,
+    schnitt: zeiten.length ? zeiten.reduce((a,b) => a+b, 0) / zeiten.length : 0,
+    top: Object.entries(zaehler).sort((a,b) => b[1]-a[1]).slice(0,3).map(([k,v]) => `${k} (${v})`).join(', '),
+    offen: alle.filter(o => !o.paid).map(o => `#${o.nr} ${o.name}`),
+    nichtAbgeholt: alle.filter(o => o.status !== 'done').length
+  };
+}
+
+function zahlenKacheln(z){
+  let h = `<div><b>${z.gesamt}</b><span>Sandwiches bestellt</span></div><div><b>${z.abgeholt}</b><span>abgeholt</span></div>
+    <div><b>${z.bezahlt}</b><span>bezahlt</span></div><div><b>${z.schnitt ? minSek(z.schnitt) : '–'}</b><span>Ø Zeit im Maker</span></div>`;
+  if(z.einnahmen !== null) h += `<div><b>${euro(z.einnahmen)}</b><span>Einnahmen (bezahlt)</span></div>`;
+  h += `<div style="grid-column:1/-1"><span>Beliebteste Zutaten</span><div style="font-weight:600">${sicher(z.top || '–')}</div></div>`;
+  return h;
+}
+
+function zusammenfassungText(z){
+  return [
+    `Youmember-Sandwich – Abend vom ${z.datum}`,
+    `Sandwiches: ${z.gesamt} (abgeholt: ${z.abgeholt})`,
+    `Bezahlt: ${z.bezahlt}` + (z.einnahmen !== null ? ` = ${euro(z.einnahmen)}` : ''),
+    z.schnitt ? `Ø Zeit im Sandwichmaker: ${minSek(z.schnitt)}` : '',
+    z.top ? `Beliebteste Zutaten: ${z.top}` : '',
+    z.offen.length ? `\nNoch nicht bezahlt (${z.offen.length}):\n` + z.offen.join('\n') : 'Alle haben bezahlt.'
+  ].filter(Boolean).join('\n');
+}
+
+$('sEnd').onclick = () => {
+  const z = abendZahlen();
+  let h = `<div class="stats">${zahlenKacheln(z)}</div>`;
+  if(z.offen.length) h += `<div class="warnbox"><b>Noch nicht bezahlt (${z.offen.length}):</b><br>${z.offen.map(sicher).join('<br>')}</div>`;
+  if(z.nichtAbgeholt) h += `<div class="warnbox">${z.nichtAbgeholt} Sandwich(es) sind noch nicht als abgeholt markiert.</div>`;
+  $('endSummary').innerHTML = h;
+  $('mSettings').classList.remove('open');
+  $('mEnd').classList.add('open');
+};
+
+$('endShare').onclick = async () => {
+  const text = zusammenfassungText(abendZahlen());
+  try {
+    if(navigator.share){ await navigator.share({ title: 'Youmember-Sandwich', text }); return; }
+  } catch(e) { if(e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text); alert('Zusammenfassung wurde kopiert.'); }
+  catch(e) { prompt('Zusammenfassung zum Kopieren:', text); }
+};
+
+$('endConfirm').onclick = () => {
+  if(!confirm('Wirklich alle Bestellungen löschen und den Abend beenden?')) return;
+  const z = abendZahlen();
+  if(z.gesamt){
+    S.evenings.unshift({ datum: z.datum, gesamt: z.gesamt, bezahlt: z.bezahlt, einnahmen: z.einnahmen, offen: z.offen.length });
+    S.evenings = S.evenings.slice(0, MAX_ABENDE);
+  }
+  S.orders = []; S.nextNr = 1; rueckgaengig = null; $('toast').classList.remove('show');
+  speichern(); allesNeuZeichnen();
+  $('mEnd').classList.remove('open');
+};
+
+
+/* ---------- 4.9 Fenster "Einstellungen" ---------- */
+
+$('btnSettings').onclick = () => {
+  const s = S.settings;
+  $('sIngr').value = s.ingredients; $('sPlates').value = s.plates; $('sPer').value = s.perPlate;
+  $('sWarn').value = s.warnMin; $('sPrice').value = s.price;
+  $('stats').innerHTML = zahlenKacheln(abendZahlen());
+  $('history').innerHTML = S.evenings.length
+    ? '<b>Vergangene Abende</b><br>' + S.evenings.map(a => sicher(`${a.datum}: ${a.gesamt} Sandwiches, ${a.bezahlt} bezahlt` + (a.einnahmen != null ? ` (${euro(a.einnahmen)})` : '') + (a.offen ? `, ${a.offen} offen` : ''))).join('<br>')
+    : '';
+  $('mSettings').classList.add('open');
+};
+
+$('sSave').onclick = () => {
+  const s = S.settings;
+  const zahl = (v, min, max, std) => { v = parseFloat(String(v).replace(',', '.')); return isNaN(v) ? std : Math.min(max, Math.max(min, v)); };
+  s.ingredients = $('sIngr').value;
+  s.plates   = Math.round(zahl($('sPlates').value, 1, 12, 4));
+  s.perPlate = Math.round(zahl($('sPer').value, 1, 6, 1));
+  s.warnMin  = zahl($('sWarn').value, 0.5, 30, 4);
+  s.price    = zahl($('sPrice').value, 0, 100, 0);
+  // Sandwiches auf Platten, die es nicht mehr gibt (oder die jetzt zu voll sind), zurück in die Warteschlange
+  for(let p = 1; p <= 12; p++){
+    aufPlatte(p).forEach((o, i) => {
+      if(p > s.plates || i >= s.perPlate){ o.status = 'wait'; o.plate = null; o.startedAt = null; }
+    });
+  }
+  speichern(); allesNeuZeichnen();
+  $('mSettings').classList.remove('open');
+};
+
+
+/* ---------- 4.10 Versionsverlauf ---------- */
+
+$('btnVer').textContent = 'v' + VERSION;
+$('btnVer').onclick = () => {
+  $('changelog').innerHTML = CHANGELOG.map(c => `<h4>Version ${sicher(c.v)}<span>${sicher(c.d)}</span></h4><ul>${c.items.map(i => `<li>${sicher(i)}</li>`).join('')}</ul>`).join('');
   $('mVer').classList.add('open');
 };
-document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.remove('open'));
-document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
 
-render();
 
-// Offline-Unterstützung
-if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
-if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+/* ---------- 4.11 Fenster schließen ---------- */
+
+$('btnDone').onclick = () => { abgeholtZeichnen(); $('mDone').classList.add('open'); };
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('.modal').classList.remove('open'));
+// Tipp auf den dunklen Hintergrund schließt das Fenster
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); }));
+
+
+/* ---------- 4.12 Start ---------- */
+
+speichernNachStart();
+zeichnen();
+
+// Offline-Speicher aktivieren (siehe sw.js)
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+// iPad bitten, die Daten dauerhaft aufzuheben
+if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+
+// Bildschirm anlassen, solange die App offen ist (geht nicht auf jedem iPad – dann Auto-Sperre in den Einstellungen ausschalten)
+let wachHalten = null;
+async function bildschirmAnlassen(){
+  try {
+    if('wakeLock' in navigator && document.visibilityState === 'visible' && !wachHalten){
+      wachHalten = await navigator.wakeLock.request('screen');
+      wachHalten.addEventListener('release', () => { wachHalten = null; });
+    }
+  } catch(e) {}
+}
+document.addEventListener('visibilitychange', bildschirmAnlassen);
+document.addEventListener('click', bildschirmAnlassen, { once: true });
+bildschirmAnlassen();
+
 })();
 </script>
 </body>
