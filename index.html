@@ -143,13 +143,32 @@
   .history{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:14px}
   .done-list .card{opacity:.8}
 
+  /* Hilfsklassen (statt Formatierungen direkt im HTML) */
+  .text-warn{color:var(--warn)}
+  .versteckt{display:none}
+  .row.spread{justify-content:space-between}
+  .card .age.unten{margin-top:6px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .stats .breit{grid-column:1/-1}
+  .stats .breit div{font-weight:600}
+  .hint.abstand{margin-bottom:14px}
+
+  /* Hinweis "Alle Platten belegt" in der Warteschlange */
+  .voll{background:#eff6ff;border:1.5px solid #bfdbfe;color:#1e40af;border-radius:12px;padding:10px 14px;margin-bottom:10px;font-size:15px}
+
+  /* Warnung, wenn die App in Safari statt über das Icon geöffnet wurde */
+  .safari{display:none;background:#fef3c7;border-bottom:2px solid #f59e0b;color:#78350f;padding:12px 16px;gap:12px;align-items:center;font-size:16px}
+  .safari.show{display:flex}
+  .safari b{display:block}
+  .safari .spacer{flex:1}
+
   /* Versionsverlauf */
   .changelog h4{margin:16px 0 4px;font-size:17px}
   .changelog h4 span{font-weight:400;color:var(--muted);font-size:14px;margin-left:6px}
   .changelog ul{margin:0;padding-left:20px;line-height:1.5}
 
   /* Kurze Meldung unten mit "Rückgängig" */
-  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;display:none;z-index:20;gap:14px;align-items:center}
+  .toast{position:fixed;left:50%;top:calc(72px + env(safe-area-inset-top));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;display:none;z-index:20;gap:14px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.25)}
   .toast.show{display:flex}
   .toast button{color:#fbbf24;font-weight:700}
 </style>
@@ -157,6 +176,12 @@
 
 <!-- ======================= 3. BILDSCHIRM-AUFBAU ======================= -->
 <body>
+<!-- Warnung: erscheint nur, wenn die App in Safari statt über das Home-Bildschirm-Icon läuft -->
+<div class="safari" id="safariWarnung">
+  <div><b>Achtung: Die App ist in Safari geöffnet.</b>Eure Bestellungen sind nur in der App auf dem Home-Bildschirm gespeichert. Bitte Safari schließen und die App über ihr Icon auf dem Home-Bildschirm öffnen.</div>
+  <span class="spacer"></span>
+  <button class="btn small" id="safariWeiter">Trotzdem hier weiter</button>
+</div>
 <header>
   <h1>Youmember-Sandwich</h1>
   <button class="ver" id="btnVer"></button>
@@ -185,15 +210,15 @@
 <!-- Fenster: Bestellung aufnehmen / bearbeiten -->
 <div class="modal" id="mOrder"><div class="sheet">
   <h3 id="oTitle">Neue Bestellung</h3>
-  <div class="field"><label>Name</label><input type="text" id="oName" autocomplete="off" autocapitalize="words" maxlength="40" placeholder="z. B. Lena"></div>
+  <div class="field"><label>Name</label><input type="text" id="oName" autocomplete="off" autocapitalize="words" maxlength="40" enterkeyhint="done" placeholder="z. B. Lena"></div>
   <div class="field"><label>Was soll drauf?</label><div id="oIngr"></div></div>
-  <div class="field"><label>Sonderwunsch (optional)</label><input type="text" id="oNote" autocomplete="off" maxlength="80" placeholder="z. B. extra knusprig"></div>
+  <div class="field"><label>Sonderwunsch (optional)</label><input type="text" id="oNote" autocomplete="off" maxlength="80" enterkeyhint="done" placeholder="z. B. extra knusprig"></div>
   <div class="field" id="oQtyField"><label>Anzahl gleiche Sandwiches</label><div class="toggle" id="oQty"></div></div>
   <div class="field"><label>Bezahlt?</label>
     <div class="toggle"><button class="chip no" data-paid="0">Noch nicht</button><button class="chip yes" data-paid="1">Bezahlt</button></div>
     <div class="hint" id="oPrice"></div></div>
   <div class="foot">
-    <button class="btn ghost" id="oDelete" style="display:none;color:var(--warn)">Löschen</button>
+    <button class="btn ghost text-warn versteckt" id="oDelete">Löschen</button>
     <span class="spacer"></span>
     <button class="btn" data-close>Abbrechen</button>
     <button class="btn primary" id="oSave">Speichern</button>
@@ -205,16 +230,16 @@
   <h3>Einstellungen &amp; Statistik</h3>
   <div class="stats" id="stats"></div>
   <div class="history" id="history"></div>
-  <div class="field"><label>Zutaten (eine Zeile pro Gruppe: „Gruppe: Zutat, Zutat, …“)</label>
+  <div class="field"><label>Zutaten (eine Zeile pro Gruppe: „Gruppe: Zutat, Zutat, …“ – Komma und Doppelpunkt nicht in Zutatennamen verwenden)</label>
     <textarea id="sIngr"></textarea></div>
-  <div class="field" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+  <div class="field grid4">
     <div><label>Platten</label><input type="number" id="sPlates" min="1" max="12"></div>
     <div><label>Sandwiches pro Platte</label><input type="number" id="sPer" min="1" max="6"></div>
     <div><label>Warnen nach (Min.)</label><input type="number" id="sWarn" min="1" max="30" step="0.5"></div>
     <div><label>Preis pro Stück (€, 0 = aus)</label><input type="number" id="sPrice" min="0" step="0.1"></div>
   </div>
   <div class="foot">
-    <button class="btn ghost" id="sEnd" style="color:var(--warn)">Abend beenden …</button>
+    <button class="btn ghost text-warn" id="sEnd">Abend beenden …</button>
     <span class="spacer"></span>
     <button class="btn" data-close>Schließen</button>
     <button class="btn primary" id="sSave">Speichern</button>
@@ -225,7 +250,7 @@
 <div class="modal" id="mEnd"><div class="sheet">
   <h3>Abend beenden</h3>
   <div id="endSummary"></div>
-  <div class="hint" style="margin-bottom:14px">Beim Beenden werden alle Bestellungen gelöscht und die Nummern starten wieder bei 1. Zutaten und Einstellungen bleiben. Die Zahlen des Abends werden unter „Vergangene Abende“ aufgehoben.</div>
+  <div class="hint abstand">Beim Beenden werden alle Bestellungen gelöscht und die Nummern starten wieder bei 1. Zutaten und Einstellungen bleiben. Die Zahlen des Abends werden unter „Vergangene Abende“ aufgehoben.</div>
   <div class="foot">
     <button class="btn ghost" id="endShare">Zusammenfassung teilen</button>
     <span class="spacer"></span>
@@ -257,7 +282,7 @@
 
 /* ---------- 4.1 Grundeinstellungen & Versionsverlauf ---------- */
 
-const VERSION = '1.2';
+const VERSION = '1.3';
 const DATEN_VERSION = 2;                 // erhöhen, wenn sich das Speicherformat ändert (siehe 4.2 "aufbereiten")
 const SPEICHER_NAME = 'sandwich-theke-v1'; // NICHT ändern – sonst sind die gespeicherten Daten "weg"
 const MAX_ABENDE = 30;                   // so viele vergangene Abende werden aufgehoben
@@ -271,6 +296,16 @@ const STANDARD_EINSTELLUNGEN = {
 };
 
 const CHANGELOG = [
+  {v:'1.3', d:'27.11.2026', items:[
+    'Schutz gegen Doppeltipps: Zweimal schnell tippen löst nicht mehr versehentlich eine zweite Bestellung aus (z. B. zwei Mal „Abgeholt“)',
+    'Die Ansicht baut sich nicht mehr neu auf, während gerade jemand tippt',
+    'Warnhinweis, wenn die App in Safari statt über das Icon geöffnet wurde (dort fehlen die Bestellungen)',
+    '„Return“ auf der Tastatur schließt die Tastatur, damit die Zutaten sichtbar werden',
+    '„Rückgängig“-Meldung erscheint oben und verdeckt keine Knöpfe mehr',
+    'Hinweis „Alle Platten belegt“ in der Warteschlange',
+    'Preis wird pro Bestellung gemerkt – eine Preisänderung am Abend verfälscht die Einnahmen nicht mehr',
+    'Code aufgeräumt'
+  ]},
   {v:'1.2', d:'25.11.2026', items:[
     'Stabilitätsupdate',
     'Offline-Speicher abgesichert: Eine WLAN-Anmeldeseite oder ein Fehler bei GitHub kann die App nicht mehr überschreiben',
@@ -340,8 +375,6 @@ function laden(){
 
 let S = laden();   // S = der komplette Zustand der App (Einstellungen + Bestellungen)
 
-function speichernNachStart(){ speichern(); } // aufbereitete Daten gleich im neuen Format sichern
-
 function speichern(){
   try { localStorage.setItem(SPEICHER_NAME, JSON.stringify(S)); }
   catch(e) { alert('Speichern hat nicht geklappt: ' + e.message); }
@@ -375,6 +408,31 @@ const bestellung = id => S.orders.find(o => o.id === id);
 const aufPlatte = p => S.orders.filter(o => o.status === 'grill' && o.plate === p).sort((a,b) => a.startedAt - b.startedAt);
 const freiePlaetze = p => S.settings.perPlate - aufPlatte(p).length;
 const istOffen = id => $(id).classList.contains('open');
+
+
+/* ---------- 4.3b Schutz gegen Doppeltipps ----------
+   Nach einer Aktion rutscht oft die nächste Karte an dieselbe Stelle.
+   Ein zweiter, schneller Tipp würde sie treffen. Deshalb werden Tipps
+   kurz nach einer Aktion ignoriert (außer auf "Rückgängig"). */
+
+const SPERRZEIT_MS = 500;
+let gesperrtBis = 0;
+let letzteBeruehrung = 0;
+
+function kurzSperren(ms = SPERRZEIT_MS){ gesperrtBis = Date.now() + ms; }
+
+document.addEventListener('pointerdown', () => { letzteBeruehrung = Date.now(); }, true);
+document.addEventListener('click', e => {
+  if(Date.now() < gesperrtBis && !e.target.closest('#toastUndo')){
+    e.stopPropagation(); e.preventDefault();
+  }
+}, true); // "true" = diese Prüfung läuft vor allen anderen Klick-Funktionen
+
+// Neu zeichnen nur, wenn gerade niemand tippt – sonst kurz danach nochmal versuchen
+function zeichnenWennRuhig(){
+  if(Date.now() - letzteBeruehrung < 800) { setTimeout(zeichnenWennRuhig, 400); return; }
+  zeichnen();
+}
 
 
 /* ---------- 4.4 Rückgängig (immer nur für EINE Bestellung) ---------- */
@@ -428,7 +486,7 @@ function zeichnen(){
   for(let p = 1; p <= st.plates; p++){
     const liste = aufPlatte(p);
     const heiss = liste.some(o => jetzt - o.startedAt >= warnMs);
-    html += `<div class="plate ${liste.length ? 'busy' : ''} ${heiss ? 'hot' : ''}">
+    html += `<div class="plate ${liste.length ? 'busy' : ''} ${heiss ? 'hot' : ''}" data-plate-nr="${p}">
       <div class="ph"><span>Platte ${p}</span><span class="age">${liste.length}/${st.perPlate}</span></div>`;
     if(!liste.length) html += `<div class="free">frei</div>`;
     liste.forEach(o => {
@@ -450,14 +508,15 @@ function zeichnen(){
   // Warteschlange (älteste zuerst)
   const warten = S.orders.filter(o => o.status === 'wait').sort((a,b) => a.createdAt - b.createdAt);
   $('cntWait').textContent = warten.length;
-  $('waitList').innerHTML = warten.length ? warten.map(o => {
+  const vollHinweis = (warten.length && frei === 0) ? '<div class="voll">Alle Platten belegt – sobald ein Sandwich fertig ist, wird eine Platte frei.</div>' : '';
+  $('waitList').innerHTML = warten.length ? vollHinweis + warten.map(o => {
     let knoepfe = '';
     for(let p = 1; p <= st.plates; p++) knoepfe += `<button class="btn small platebtn" data-act="plate" data-plate="${p}" data-id="${o.id}" ${freiePlaetze(p) > 0 ? '' : 'disabled'}>P${p}</button>`;
     return `<div class="card">
       <div class="row"><span class="nr">#${o.nr}</span><span class="name">${sicher(o.name)}</span>${bezahltKnopf(o)}</div>
       <div class="ing">${zutatenText(o)}</div>
-      <div class="row" style="justify-content:space-between"><div class="actions">${knoepfe}</div>${bearbeitenKnopf(o)}</div>
-      <div class="age" style="margin-top:6px">bestellt ${vorWieLange(o.createdAt)}</div></div>`;
+      <div class="row spread"><div class="actions">${knoepfe}</div>${bearbeitenKnopf(o)}</div>
+      <div class="age unten">bestellt ${vorWieLange(o.createdAt)}</div></div>`;
   }).join('') : '<div class="empty">Keine offenen Bestellungen.<br>Tippe auf „＋ Neue Bestellung“.</div>';
 
   // Fertig – zum Abholen
@@ -466,7 +525,7 @@ function zeichnen(){
   $('readyList').innerHTML = fertig.length ? fertig.map(o => `<div class="card">
       <div class="row"><span class="nr">#${o.nr}</span><span class="name">${sicher(o.name)}</span>${bezahltKnopf(o)}</div>
       <div class="ing">${zutatenText(o)}</div>
-      <div class="row" style="justify-content:space-between">
+      <div class="row spread">
         <div class="actions"><button class="btn ok small" data-act="done" data-id="${o.id}">Abgeholt</button>${bearbeitenKnopf(o)}</div>
         <span class="age">fertig ${vorWieLange(o.readyAt)}</span></div></div>`).join('')
     : '<div class="empty">Noch nichts fertig.</div>';
@@ -497,14 +556,14 @@ function sekundenTakt(){
   const warnMs = S.settings.warnMin * 60000, jetzt = Date.now();
   document.querySelectorAll('.timer[data-start]').forEach(el => { el.textContent = minSek(jetzt - (+el.dataset.start)); });
   let neu = false;
-  document.querySelectorAll('.plate').forEach((el, i) => {
-    const heiss = aufPlatte(i+1).some(o => jetzt - o.startedAt >= warnMs);
+  document.querySelectorAll('.plate[data-plate-nr]').forEach(el => {
+    const heiss = aufPlatte(+el.dataset.plateNr).some(o => jetzt - o.startedAt >= warnMs);
     if(heiss !== el.classList.contains('hot')) neu = true;
   });
-  if(neu) zeichnen();
+  if(neu) zeichnenWennRuhig();
 }
 setInterval(sekundenTakt, 1000);
-setInterval(zeichnen, 30000); // "vor X Min." aktualisieren
+setInterval(zeichnenWennRuhig, 30000); // "vor X Min." aktualisieren
 
 
 /* ---------- 4.6 Knöpfe auf den Bestell-Karten ---------- */
@@ -547,6 +606,7 @@ document.addEventListener('click', e => {
     default: return;
   }
   speichern(); allesNeuZeichnen();
+  kurzSperren();
 });
 
 
@@ -582,11 +642,16 @@ function bestellFensterOeffnen(o){
   $('oName').value = o ? o.name : '';
   $('oName').style.borderColor = '';
   $('oNote').value = o ? (o.note || '') : '';
-  $('oDelete').style.display = o ? '' : 'none';
+  $('oDelete').classList.toggle('versteckt', !o);
   bestellFensterZeichnen();
   $('mOrder').classList.add('open');
   if(!o) setTimeout(() => $('oName').focus(), 50);
 }
+
+// "Return" auf der Tastatur: Tastatur schließen, damit die Zutaten sichtbar sind
+['oName','oNote'].forEach(id => $(id).addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); e.target.blur(); }
+}));
 
 $('oIngr').addEventListener('click', e => {
   const c = e.target.closest('[data-ing]'); if(!c) return;
@@ -613,13 +678,14 @@ $('oSave').onclick = () => {
       S.orders.push({
         id: neueId(), nr: S.nextNr++,
         name: anzahl > 1 ? `${name} (${i+1}/${anzahl})` : name,
-        ingredients: zutaten, note: notiz, paid: bezahlt,
+        ingredients: zutaten, note: notiz, paid: bezahlt, price: S.settings.price,
         status: 'wait', plate: null, createdAt: Date.now()
       });
     }
   }
   speichern(); allesNeuZeichnen();
   $('mOrder').classList.remove('open');
+  kurzSperren();
 };
 
 $('oDelete').onclick = () => {
@@ -629,6 +695,7 @@ $('oDelete').onclick = () => {
   S.orders = S.orders.filter(x => x.id !== o.id);
   speichern(); allesNeuZeichnen();
   $('mOrder').classList.remove('open');
+  kurzSperren();
 };
 
 $('fab').onclick = () => bestellFensterOeffnen(null);
@@ -641,13 +708,17 @@ function abendZahlen(){
   const zeiten = alle.filter(o => o.grillTime).map(o => o.grillTime);
   const zaehler = {};
   alle.forEach(o => o.ingredients.forEach(z => zaehler[z] = (zaehler[z] || 0) + 1));
-  const bezahltAnz = alle.filter(o => o.paid).length;
+  const bezahltListe = alle.filter(o => o.paid);
+  const bezahltAnz = bezahltListe.length;
+  // Jede Bestellung merkt sich ihren Preis; ältere Bestellungen ohne Preis nehmen den aktuellen
+  const einnahmen = bezahltListe.reduce((summe, o) => summe + (typeof o.price === 'number' ? o.price : S.settings.price), 0);
+  const mitPreis = S.settings.price > 0 || einnahmen > 0;
   return {
     datum: new Date().toLocaleDateString('de-DE'),
     gesamt: alle.length,
     abgeholt: alle.filter(o => o.status === 'done').length,
     bezahlt: bezahltAnz,
-    einnahmen: S.settings.price > 0 ? bezahltAnz * S.settings.price : null,
+    einnahmen: mitPreis ? einnahmen : null,
     schnitt: zeiten.length ? zeiten.reduce((a,b) => a+b, 0) / zeiten.length : 0,
     top: Object.entries(zaehler).sort((a,b) => b[1]-a[1]).slice(0,3).map(([k,v]) => `${k} (${v})`).join(', '),
     offen: alle.filter(o => !o.paid).map(o => `#${o.nr} ${o.name}`),
@@ -659,7 +730,7 @@ function zahlenKacheln(z){
   let h = `<div><b>${z.gesamt}</b><span>Sandwiches bestellt</span></div><div><b>${z.abgeholt}</b><span>abgeholt</span></div>
     <div><b>${z.bezahlt}</b><span>bezahlt</span></div><div><b>${z.schnitt ? minSek(z.schnitt) : '–'}</b><span>Ø Zeit im Maker</span></div>`;
   if(z.einnahmen !== null) h += `<div><b>${euro(z.einnahmen)}</b><span>Einnahmen (bezahlt)</span></div>`;
-  h += `<div style="grid-column:1/-1"><span>Beliebteste Zutaten</span><div style="font-weight:600">${sicher(z.top || '–')}</div></div>`;
+  h += `<div class="breit"><span>Beliebteste Zutaten</span><div>${sicher(z.top || '–')}</div></div>`;
   return h;
 }
 
@@ -750,14 +821,24 @@ $('btnVer').onclick = () => {
 /* ---------- 4.11 Fenster schließen ---------- */
 
 $('btnDone').onclick = () => { abgeholtZeichnen(); $('mDone').classList.add('open'); };
-document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('.modal').classList.remove('open'));
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => { b.closest('.modal').classList.remove('open'); kurzSperren(300); });
 // Tipp auf den dunklen Hintergrund schließt das Fenster
-document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); }));
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m){ m.classList.remove('open'); kurzSperren(300); } }));
 
 
-/* ---------- 4.12 Start ---------- */
+/* ---------- 4.12 Safari-Warnung ----------
+   Auf dem iPad speichert die App vom Home-Bildschirm getrennt von Safari.
+   Wird sie in Safari geöffnet, sieht man eine leere Liste – darauf weisen wir hin. */
 
-speichernNachStart();
+const alsAppGeoeffnet = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+const istTabletOderHandy = navigator.maxTouchPoints > 1;
+if(!alsAppGeoeffnet && istTabletOderHandy) $('safariWarnung').classList.add('show');
+$('safariWeiter').onclick = () => $('safariWarnung').classList.remove('show');
+
+
+/* ---------- 4.13 Start ---------- */
+
+speichern();   // aufbereitete Daten gleich im aktuellen Format sichern
 zeichnen();
 
 // Offline-Speicher aktivieren (siehe sw.js)
